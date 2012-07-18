@@ -130,6 +130,11 @@ extern "C" {
 #define OPUS_GET_PITCH_REQUEST               4033
 #define OPUS_SET_GAIN_REQUEST                4034
 #define OPUS_GET_GAIN_REQUEST                4045
+#define OPUS_SET_TUNE_LOWPASS                5002
+#define OPUS_SET_TUNE_TRIM                   5004
+#define OPUS_SET_INTENSITY_START             5006
+#define OPUS_SET_SKIP_LOW                    5008
+#define OPUS_SET_SKIP_HIGH                   5010
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))

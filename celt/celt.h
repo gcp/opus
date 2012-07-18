@@ -86,7 +86,16 @@ extern "C" {
 #define CELT_SET_SIGNALLING_REQUEST    10016
 #define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, __opus_check_int(x)
 
-
+#define CELT_SET_TUNE_LOWPASS_REQUEST                10020
+#define CELT_SET_TUNE_LOWPASS(x) CELT_SET_TUNE_LOWPASS_REQUEST, __opus_check_int(x)
+#define CELT_SET_TUNE_TRIM_REQUEST                   10022
+#define CELT_SET_TUNE_TRIM(x) CELT_SET_TUNE_TRIM_REQUEST, __opus_check_int(x)
+#define CELT_SET_INTENSITY_START_REQUEST             10024
+#define CELT_SET_INTENSITY_START(x) CELT_SET_INTENSITY_START_REQUEST, __opus_check_int(x)
+#define CELT_SET_SKIP_LOW_REQUEST                    10026
+#define CELT_SET_SKIP_LOW(x) CELT_SET_SKIP_LOW_REQUEST, __opus_check_int(x)
+#define CELT_SET_SKIP_HIGH_REQUEST                   10028
+#define CELT_SET_SKIP_HIGH(x) CELT_SET_SKIP_HIGH_REQUEST, __opus_check_int(x)
 
 /* Encoder stuff */
 

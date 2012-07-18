@@ -456,6 +456,11 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
    case OPUS_SET_DTX_REQUEST:
    case OPUS_SET_FORCE_MODE_REQUEST:
+   case OPUS_SET_TUNE_LOWPASS:
+   case OPUS_SET_TUNE_TRIM:
+   case OPUS_SET_INTENSITY_START:
+   case OPUS_SET_SKIP_LOW:
+   case OPUS_SET_SKIP_HIGH:
    {
       int s;
       /* This works for int32 params */

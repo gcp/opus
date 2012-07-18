@@ -69,6 +69,12 @@ struct OpusEncoder {
     opus_int32   bitrate_bps;
     opus_int32   user_bitrate_bps;
     int          encoder_buffer;
+    /* encoder tuning */
+    int          tune_lowpass;
+    int          tune_trim;
+    int          intensity_start;
+    int          skip_high;
+    int          skip_low;
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -993,6 +999,16 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     }
 
     /* CELT processing */
+    if (st->tune_lowpass != 0)
+        celt_encoder_ctl(celt_enc, CELT_SET_TUNE_LOWPASS(st->tune_lowpass));
+    if (st->tune_trim != 0)
+        celt_encoder_ctl(celt_enc, CELT_SET_TUNE_TRIM(st->tune_trim));
+    if (st->intensity_start != 0)
+        celt_encoder_ctl(celt_enc, CELT_SET_INTENSITY_START(st->intensity_start));
+    if (st->skip_low != 0)
+        celt_encoder_ctl(celt_enc, CELT_SET_SKIP_LOW(st->skip_low));
+    if (st->skip_high != 0)
+        celt_encoder_ctl(celt_enc, CELT_SET_SKIP_HIGH(st->skip_high));
     {
         int endband=21;
 
@@ -1395,6 +1411,46 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                 st->silk_mode.maxInternalSampleRate = 16000;
             }
         }
+        break;
+        case OPUS_SET_TUNE_LOWPASS:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < 0 || value > 24000)
+                return OPUS_BAD_ARG;
+            st->tune_lowpass = value;
+        }
+        break;
+        case OPUS_SET_TUNE_TRIM:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < 0 || value > 100)
+                return OPUS_BAD_ARG;
+            st->tune_trim = value;
+        }
+        break;
+        case OPUS_SET_INTENSITY_START:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < 0 || value > 100)
+                return OPUS_BAD_ARG;
+            st->intensity_start = value;
+        }
+        break;
+        case OPUS_SET_SKIP_LOW:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < 0 || value > 100)
+                return OPUS_BAD_ARG;
+            st->skip_low = value;
+        }
+        break;
+        case OPUS_SET_SKIP_HIGH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < 0 || value > 100)
+                return OPUS_BAD_ARG;
+            st->skip_high = value;
+        } 
         break;
         case OPUS_GET_BANDWIDTH_REQUEST:
         {

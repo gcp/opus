@@ -157,6 +157,13 @@ struct OpusCustomEncoder {
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
    int loss_rate;
 
+   /* encoder tuning */
+   int          tune_lowpass;
+   int          tune_trim;
+   int          intensity_start;
+   int          skip_high;
+   int          skip_low;
+
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
 
@@ -886,6 +893,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    ec_enc _enc;
    VARDECL(celt_sig, in);
    VARDECL(celt_sig, freq);
+   VARDECL(celt_norm, freqOrig);
    VARDECL(celt_norm, X);
    VARDECL(celt_ener, bandE);
    VARDECL(opus_val16, bandLogE);
@@ -901,6 +909,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    opus_val16 *oldBandE, *oldLogE, *oldLogE2;
    int shortBlocks=0;
    int isTransient=0;
+   int isLowpassed=0;
+   int endline;   
    const int CC = st->channels;
    const int C = st->stream_channels;
    int LM, M;
@@ -1038,6 +1048,24 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    total_bits = nbCompressedBytes*8;
 
    effEnd = st->end;
+   /* See if we can skip encoding entire bands based on the current lowpass */
+   if (st->tune_lowpass != 0)
+   {      
+      int endband = st->mode->nbEBands;      
+      endline = (st->tune_lowpass * N) / ((st->mode->Fs)/2);   
+      for(i=0;i<endband;i++)
+      {
+         int bandendline = (st->mode->eBands[i])<<LM;
+         if (bandendline > endline)
+         {
+            effEnd = i;
+            break;
+         }
+      }
+      printf("\nlowpass: %d endline: %d effEnd: %d\n", 
+         st->tune_lowpass, endline, effEnd);
+   }
+      
    if (effEnd > st->mode->effEBands)
       effEnd = st->mode->effEBands;
 
@@ -1233,6 +1261,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    }
 
    ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
+   ALLOC(freqOrig, C*N, celt_norm);  /**< Original spectrum before lowpass */
    ALLOC(bandE,st->mode->nbEBands*CC, celt_ener);
    ALLOC(bandLogE,st->mode->nbEBands*CC, opus_val16);
    /* Compute MDCTs */
@@ -1254,12 +1283,31 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             freq[c*N+i] = 0;
       } while (++c<C);
    }
-   ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
+
+   /* XXX: do this after the energy computation? */
+   if (st->tune_lowpass != 0)
+   {
+      /* Zero part of the MDCT spectrum */
+      /* Don't do this when we have short blocks, we won't be able to split
+         effectively anyway, and we're more likely to have t/f changes. */
+      if (isTransient == 0)
+      {
+         c=0; do
+         {
+            for (i=endline;i<N;i++)
+            {
+               freqOrig[c*N+i] = freq[c*N+i];
+               freq[c*N+i] = 0;
+            }
+         } while (++c<C);
+         isLowpassed = 1;
+      }
+   }   
 
    compute_band_energies(st->mode, freq, bandE, effEnd, C, M);
-
    amp2Log2(st->mode, effEnd, st->end, bandE, bandLogE, C);
 
+   ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
 
@@ -1267,6 +1315,34 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    tf_select = tf_analysis(st->mode, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, &tf_sum);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
+
+   printf("t=%d\ntf: ", isTransient);
+   for (i=0;i<st->end;i++)
+   {
+      printf(" %d", tf_res[i]);
+   }
+
+   /* Check for t/f transformation making the nulling of coeffs ineffective */
+   if (isLowpassed)
+   {
+      /* We'd have reduced the effEnd to the last band where we're active,
+         so that's the only one we need to check */
+      if (tf_res[effEnd-1])
+      {
+         /* Damn, our nulled band got transformed. Back up */
+         c=0; do
+         {
+            for (i=endline;i<N;i++)
+            {
+               freq[c*N+i] = freqOrig[c*N+i];
+            }
+         } while (++c<C);
+         /* Redo the math */
+         compute_band_energies(st->mode, freq, bandE, effEnd, C, M);
+         amp2Log2(st->mode, effEnd, st->end, bandE, bandLogE, C);
+         normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
+      }
+   }
 
    ALLOC(error, C*st->mode->nbEBands, opus_val16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
@@ -1864,6 +1940,46 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
             goto bad_arg;
          *value=st->mode;
       }
+      break;
+      case CELT_SET_TUNE_LOWPASS_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < 0 || value > 24000)
+            return OPUS_BAD_ARG;
+         st->tune_lowpass = value;
+      }
+      break;
+      case CELT_SET_TUNE_TRIM_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < 0 || value > 100)
+            return OPUS_BAD_ARG;
+         st->tune_trim = value;
+      }
+      break;
+      case CELT_SET_INTENSITY_START_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < 0 || value > 100)
+            return OPUS_BAD_ARG;
+         st->intensity_start = value;
+      }
+      break;
+      case CELT_SET_SKIP_LOW_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < 0 || value > 100)
+            return OPUS_BAD_ARG;
+         st->skip_low = value;
+      }
+      break;
+      case CELT_SET_SKIP_HIGH_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < 0 || value > 100)
+             return OPUS_BAD_ARG;
+         st->skip_high = value;
+      } 
       break;
       case OPUS_GET_FINAL_RANGE_REQUEST:
       {

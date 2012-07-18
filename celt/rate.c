@@ -341,6 +341,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       /*Only code a skip decision if we're above the threshold for this band.
         Otherwise it is force-skipped.
         This ensures that we have enough bits to code the skip flag.*/
+      // 48/128th bits per MDCT bin = 6/16  bits per MDCT bin
       if (band_bits >= IMAX(thresh[j], alloc_floor+(1<<BITRES)))
       {
          if (encode)
@@ -350,6 +351,15 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
                skip here must be explicitly signaled.*/
             /*Choose a threshold with some hysteresis to keep bands from
                fluctuating in and out.*/
+             /*    The encoder uses band skipping to ensure that the shape of the bands
+                   is only coded if there is at least 1/2 bit per sample available for
+                   the PVQ.  If not, then no bit is allocated and folding is used
+                   instead.  To ensure continuity in the allocation, some amount of
+                   hysteresis is added to the process, such that a band that received
+                   PVQ bits in the previous frame only needs 7/16 bit/sample to be coded
+                   for the current frame, while a band that did not receive PVQ bits in
+                   the previous frames needs at least 9/16 bit/sample to be coded.
+             */
 #ifdef FUZZING
             if ((rand()&0x1) == 0)
 #else
