@@ -158,11 +158,11 @@ struct OpusCustomEncoder {
    int loss_rate;
 
    /* encoder tuning */
-   int          tune_lowpass;
-   int          tune_trim;
-   int          intensity_start;
-   int          skip_high;
-   int          skip_low;
+   int tune_lowpass;
+   int tune_trim;
+   int intensity_start;
+   int skip_high;
+   int skip_low;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -794,12 +794,13 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
 }
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
-      const opus_val16 *bandLogE, int end, int LM, int C, int N0)
+      const opus_val16 *bandLogE, int end, int LM, int C, int N0,
+      int start_trim)
 {
    int i;
    opus_val32 diff=0;
    int c;
-   int trim_index = 5;
+   int trim_index = start_trim;
    if (C==2)
    {
       opus_val16 sum = 0; /* Q10 */
@@ -937,6 +938,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence=0;
+   int skip_high;
+   int skip_low;
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
@@ -1445,8 +1448,12 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
+      if (st->tune_trim != 0)
+      {
+         alloc_trim = st->tune_trim - 1;
+      }
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N);
+            st->end, LM, C, N, alloc_trim);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -1562,6 +1569,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          intensity = 20;
       else
          intensity = 100;
+      if (st->intensity_start != 0)
+         intensity = st->intensity_start;
       intensity = IMIN(st->end,IMAX(st->start, intensity));
    }
 
@@ -1570,13 +1579,29 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
+   if (st->skip_low != 0)
+   {
+      skip_low = st->skip_low;
+   } else
+   {
+      skip_low = 7;
+   }
+   if (st->skip_high != 0)
+   {
+      skip_high = st->skip_high;
+   } else
+   {
+      skip_high = 9;
+   }
+
    /* bits =           packet size                    - where we are - safety*/
    bits = (((opus_int32)nbCompressedBytes*8)<<BITRES) - ec_tell_frac(enc) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
-         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands);
+         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands,
+         skip_low, skip_high);
    st->lastCodedBands = codedBands;
 
    quant_fine_energy(st->mode, st->start, st->end, oldBandE, error, fine_quant, enc, C);
@@ -2626,7 +2651,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
-         fine_quant, fine_priority, C, LM, dec, 0, 0);
+         fine_quant, fine_priority, C, LM, dec, 0, 0, 0, 0);
 
    unquant_fine_energy(st->mode, st->start, st->end, oldBandE, fine_quant, dec, C);
 
