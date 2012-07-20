@@ -467,14 +467,18 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
    if (sum < 80)
    {
       decision = SPREAD_AGGRESSIVE;
+      /*printf("Spreading aggressive\n");*/
    } else if (sum < 256)
    {
       decision = SPREAD_NORMAL;
+      /*printf("Spreading normal\n");*/
    } else if (sum < 384)
    {
       decision = SPREAD_LIGHT;
+      /*printf("Spreading light\n");*/
    } else {
       decision = SPREAD_NONE;
+      /*printf("Spreading not\n");*/
    }
 #ifdef FUZZING
    decision = rand()&0x3;

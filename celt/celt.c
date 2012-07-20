@@ -1065,8 +1065,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             break;
          }
       }
-      printf("\nlowpass: %d endline: %d effEnd: %d\n", 
-         st->tune_lowpass, endline, effEnd);
+      /*printf("\nlowpass: %d endline: %d effEnd: %d\n", 
+               st->tune_lowpass, endline, effEnd);*/
    }
       
    if (effEnd > st->mode->effEBands)
@@ -1319,11 +1319,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
-   printf("t=%d\ntf: ", isTransient);
+   /*printf("t=%d\ntf: ", isTransient);
    for (i=0;i<st->end;i++)
    {
       printf(" %d", tf_res[i]);
-   }
+   }*/
 
    /* Check for t/f transformation making the nulling of coeffs ineffective */
    if (isLowpassed)

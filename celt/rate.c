@@ -311,7 +311,24 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       bits[j] = tmp;
       psum += tmp;
    }
-
+#ifdef PRINT_ALLOC
+   printf("\n");
+   for(j=0;j<end;j++)
+   {
+      printf("%d ", bits[j]);
+   }
+   printf("\n");
+   for(j=0;j<end;j++)
+   {
+      printf("%2.2f ", bits[j]/(float)((m->eBands[j+1]-m->eBands[j])<<LM<<BITRES));
+   }
+   printf("\n");
+   for(j=0;j<end;j++)
+   {
+      printf("%3.1f ", (6.0f*bits[j])/(float)((m->eBands[j+1]-m->eBands[j])<<LM<<BITRES));
+   }
+   printf("\n");
+#endif
    /* Decide which bands to skip, working backwards from the end. */
    for (codedBands=end;;codedBands--)
    {
