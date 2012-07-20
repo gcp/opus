@@ -313,11 +313,11 @@ void silk_biquad_float(
     opus_val32 inval;
     opus_val32 A[2], B[3];
 
-    A[0] = (opus_val32)(A_Q28[0] * (1./((opus_int32)1<<28)));
-    A[1] = (opus_val32)(A_Q28[1] * (1./((opus_int32)1<<28)));
-    B[0] = (opus_val32)(B_Q28[0] * (1./((opus_int32)1<<28)));
-    B[1] = (opus_val32)(B_Q28[1] * (1./((opus_int32)1<<28)));
-    B[2] = (opus_val32)(B_Q28[2] * (1./((opus_int32)1<<28)));
+    A[0] = (opus_val32)(A_Q28[0] * (1.f/((opus_int32)1<<28)));
+    A[1] = (opus_val32)(A_Q28[1] * (1.f/((opus_int32)1<<28)));
+    B[0] = (opus_val32)(B_Q28[0] * (1.f/((opus_int32)1<<28)));
+    B[1] = (opus_val32)(B_Q28[1] * (1.f/((opus_int32)1<<28)));
+    B[2] = (opus_val32)(B_Q28[2] * (1.f/((opus_int32)1<<28)));
 
     /* Negate A_Q28 values and split in two parts */
 
@@ -510,16 +510,22 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     if (max_data_bytes<3 || st->bitrate_bps < 3*frame_rate*8
        || (frame_rate<50 && (max_data_bytes*frame_rate<300 || st->bitrate_bps < 2400)))
     {
+       /*If the space is too low to do something useful, emit 'PLC' frames.*/
        int tocmode = st->mode;
+       int bw = st->bandwidth == 0 ? OPUS_BANDWIDTH_NARROWBAND : st->bandwidth;
        if (tocmode==0)
           tocmode = MODE_SILK_ONLY;
        if (frame_rate>100)
           tocmode = MODE_CELT_ONLY;
        if (frame_rate < 50)
           tocmode = MODE_SILK_ONLY;
-       data[0] = gen_toc(tocmode, frame_rate,
-                         st->bandwidth == 0 ? OPUS_BANDWIDTH_NARROWBAND : st->bandwidth,
-                         st->stream_channels);
+       if(tocmode==MODE_SILK_ONLY&&bw>OPUS_BANDWIDTH_WIDEBAND)
+          bw=OPUS_BANDWIDTH_WIDEBAND;
+       else if (tocmode==MODE_CELT_ONLY&&bw==OPUS_BANDWIDTH_MEDIUMBAND)
+          bw=OPUS_BANDWIDTH_NARROWBAND;
+       else if (bw<=OPUS_BANDWIDTH_SUPERWIDEBAND)
+          bw=OPUS_BANDWIDTH_SUPERWIDEBAND;
+       data[0] = gen_toc(tocmode, frame_rate, bw, st->stream_channels);
        RESTORE_STACK;
        return 1;
     }
@@ -1095,8 +1101,8 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
             g1 = g1==16384 ? Q15ONE : SHL16(g1,1);
             g2 = g2==16384 ? Q15ONE : SHL16(g2,1);
 #else
-            g1 *= (1./16384);
-            g2 *= (1./16384);
+            g1 *= (1.f/16384);
+            g2 *= (1.f/16384);
 #endif
             stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
                   frame_size, st->channels, celt_mode->window, st->Fs);
