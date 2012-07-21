@@ -59,6 +59,7 @@
 #else
 #define OPUS_CUSTOM_NOSTATIC static inline
 #endif
+#define IF_SET_ELSE(x,y) ((x)?(x):(y))
 
 static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0};
 /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
@@ -134,75 +135,6 @@ static int resampling_factor(opus_int32 rate)
    }
    return ret;
 }
-
-/** Encoder state
- @brief Encoder state
- */
-struct OpusCustomEncoder {
-   const OpusCustomMode *mode;     /**< Mode used by the encoder */
-   int overlap;
-   int channels;
-   int stream_channels;
-
-   int force_intra;
-   int clip;
-   int disable_pf;
-   int complexity;
-   int upsample;
-   int start, end;
-
-   opus_int32 bitrate;
-   int vbr;
-   int signalling;
-   int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
-   int loss_rate;
-
-   /* encoder tuning */
-   int tune_lowpass;
-   int tune_trim;
-   int intensity_start;
-   int skip_high;
-   int skip_low;
-
-   /* Everything beyond this point gets cleared on a reset */
-#define ENCODER_RESET_START rng
-
-   opus_uint32 rng;
-   int spread_decision;
-   opus_val32 delayedIntra;
-   int tonal_average;
-   int lastCodedBands;
-   int hf_average;
-   int tapset_decision;
-
-   int prefilter_period;
-   opus_val16 prefilter_gain;
-   int prefilter_tapset;
-#ifdef RESYNTH
-   int prefilter_period_old;
-   opus_val16 prefilter_gain_old;
-   int prefilter_tapset_old;
-#endif
-   int consec_transient;
-
-   opus_val32 preemph_memE[2];
-   opus_val32 preemph_memD[2];
-
-   /* VBR-related parameters */
-   opus_int32 vbr_reservoir;
-   opus_int32 vbr_drift;
-   opus_int32 vbr_offset;
-   opus_int32 vbr_count;
-
-#ifdef RESYNTH
-   celt_sig syn_mem[2][2*MAX_PERIOD];
-#endif
-
-   celt_sig in_mem[1]; /* Size = channels*mode->overlap */
-   /* celt_sig prefilter_mem[],  Size = channels*COMBFILTER_PERIOD */
-   /* celt_sig overlap_mem[],  Size = channels*mode->overlap */
-   /* opus_val16 oldEBands[], Size = 2*channels*mode->nbEBands */
-};
 
 int celt_encoder_get_size(int channels)
 {
@@ -793,7 +725,8 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
    }
 }
 
-static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
+static int alloc_trim_analysis(CELTEncoder * OPUS_RESTRICT st,
+      const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
       int start_trim)
 {
@@ -836,13 +769,14 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       result of a bug in the loop above */
    diff /= 2*C*(end-1);
    /*printf("%f\n", diff);*/
-   if (diff > QCONST16(2.f, DB_SHIFT))
+
+   if (diff > QCONST16((float)IF_SET_ELSE(st->tune_trim_lower1, 2.f), DB_SHIFT))
       trim_index--;
-   if (diff > QCONST16(8.f, DB_SHIFT))
+   if (diff > QCONST16((float)IF_SET_ELSE(st->tune_trim_lower2, 8.f), DB_SHIFT))
       trim_index--;
-   if (diff < -QCONST16(4.f, DB_SHIFT))
+   if (diff < -QCONST16((float)IF_SET_ELSE(st->tune_trim_increase1, 4.f), DB_SHIFT))
       trim_index++;
-   if (diff < -QCONST16(10.f, DB_SHIFT))
+   if (diff < -QCONST16((float)IF_SET_ELSE(st->tune_trim_increase2, 10.f), DB_SHIFT))
       trim_index++;
 
    if (trim_index<0)
@@ -1363,7 +1297,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          if (st->complexity == 0)
             st->spread_decision = SPREAD_NONE;
       } else {
-         st->spread_decision = spreading_decision(st->mode, X,
+         st->spread_decision = spreading_decision(st, st->mode, X,
                &st->tonal_average, st->spread_decision, &st->hf_average,
                &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
       }
@@ -1452,7 +1386,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       {
          alloc_trim = st->tune_trim - 1;
       }
-      alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
+      alloc_trim = alloc_trim_analysis(st, st->mode, X, bandLogE,
             st->end, LM, C, N, alloc_trim);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
@@ -2005,6 +1939,62 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
              return OPUS_BAD_ARG;
          st->skip_high = value;
       } 
+      break;
+      case CELT_SET_TRIM_LOWER1_THRESH_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -500 || value > 500)
+            return OPUS_BAD_ARG;
+         st->tune_trim_lower1 = value;
+      } 
+      break;
+      case CELT_SET_TRIM_LOWER2_THRESH_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -500 || value > 500)
+            return OPUS_BAD_ARG;
+         st->tune_trim_lower2 = value;
+      } 
+      break;
+      case CELT_SET_TRIM_INCR1_THRESH_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -500 || value > 500)
+            return OPUS_BAD_ARG;
+         st->tune_trim_increase1 = value;
+      } 
+      break;
+      case CELT_SET_TRIM_INCR2_THRESH_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -500 || value > 500)
+            return OPUS_BAD_ARG;
+         st->tune_trim_increase2 = value;
+      } 
+      break;
+      case CELT_SET_SPREAD_AGGR_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -1000 || value > 1000)
+            return OPUS_BAD_ARG;
+         st->tune_spread_aggr = value;
+      }
+      break;
+      case CELT_SET_SPREAD_MEDIUM_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -1000 || value > 1000)
+            return OPUS_BAD_ARG;
+         st->tune_spread_medium = value;
+      }
+      break;
+      case CELT_SET_SPREAD_LIGHT_REQUEST:
+      {
+         opus_int32 value = va_arg(ap, opus_int32);
+         if (value < -1000 || value > 1000)
+            return OPUS_BAD_ARG;
+         st->tune_spread_light = value;
+      }
       break;
       case OPUS_GET_FINAL_RANGE_REQUEST:
       {

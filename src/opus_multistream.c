@@ -461,6 +461,13 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_INTENSITY_START:
    case OPUS_SET_SKIP_LOW:
    case OPUS_SET_SKIP_HIGH:
+   case OPUS_SET_TRIM_LOWER1_THRESH:
+   case OPUS_SET_TRIM_LOWER2_THRESH:
+   case OPUS_SET_TRIM_INCR1_THRESH:
+   case OPUS_SET_TRIM_INCR2_THRESH:
+   case OPUS_SET_SPREAD_AGGR_THRESH:
+   case OPUS_SET_SPREAD_MEDIUM_THRESH:
+   case OPUS_SET_SPREAD_LIGHT_THRESH:
    {
       int s;
       /* This works for int32 params */
@@ -498,7 +505,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
       *value = (OpusEncoder*)ptr;
    }
-      break;
+   break;
    default:
       ret = OPUS_UNIMPLEMENTED;
       break;

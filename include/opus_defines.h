@@ -147,6 +147,13 @@ extern "C" {
 #define OPUS_SET_INTENSITY_START             5006
 #define OPUS_SET_SKIP_LOW                    5008
 #define OPUS_SET_SKIP_HIGH                   5010
+#define OPUS_SET_TRIM_LOWER1_THRESH          5012
+#define OPUS_SET_TRIM_LOWER2_THRESH          5014
+#define OPUS_SET_TRIM_INCR1_THRESH           5016
+#define OPUS_SET_TRIM_INCR2_THRESH           5018
+#define OPUS_SET_SPREAD_AGGR_THRESH          5020
+#define OPUS_SET_SPREAD_MEDIUM_THRESH        5022
+#define OPUS_SET_SPREAD_LIGHT_THRESH         5024
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))

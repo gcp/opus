@@ -75,6 +75,13 @@ struct OpusEncoder {
     int          intensity_start;
     int          skip_high;
     int          skip_low;
+    int          tune_trim_lower1;
+    int          tune_trim_lower2;
+    int          tune_trim_increase1;
+    int          tune_trim_increase2;
+    int          tune_spread_aggr;
+    int          tune_spread_medium;
+    int          tune_spread_light;
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
@@ -1015,6 +1022,20 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
         celt_encoder_ctl(celt_enc, CELT_SET_SKIP_LOW(st->skip_low));
     if (st->skip_high != 0)
         celt_encoder_ctl(celt_enc, CELT_SET_SKIP_HIGH(st->skip_high));
+    if (st->tune_trim_lower1 != 0)
+        celt_encoder_ctl(celt_enc, CELT_SET_TRIM_LOWER1_THRESH(st->tune_trim_lower1));
+    if (st->tune_trim_lower2 != 0)
+       celt_encoder_ctl(celt_enc, CELT_SET_TRIM_LOWER2_THRESH(st->tune_trim_lower2));
+    if (st->tune_trim_increase1 != 0)
+       celt_encoder_ctl(celt_enc, CELT_SET_TRIM_INCR1_THRESH(st->tune_trim_increase1));
+    if (st->tune_trim_increase2 != 0)
+       celt_encoder_ctl(celt_enc, CELT_SET_TRIM_INCR2_THRESH(st->tune_trim_increase2));
+    if (st->tune_spread_aggr != 0)
+       celt_encoder_ctl(celt_enc, CELT_SET_SPREAD_AGGR(st->tune_spread_aggr));
+    if (st->tune_spread_medium != 0)
+       celt_encoder_ctl(celt_enc, CELT_SET_SPREAD_MEDIUM(st->tune_spread_medium));
+    if (st->tune_spread_light != 0)
+       celt_encoder_ctl(celt_enc, CELT_SET_SPREAD_LIGHT(st->tune_spread_light));
     {
         int endband=21;
 
@@ -1458,6 +1479,62 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             st->skip_high = value;
         } 
         break;
+        case OPUS_SET_TRIM_LOWER1_THRESH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < -500 || value > 500)
+               return OPUS_BAD_ARG;
+            st->tune_trim_lower1 = value;
+        } 
+        break;
+        case OPUS_SET_TRIM_LOWER2_THRESH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < -500 || value > 500)
+               return OPUS_BAD_ARG;
+             st->tune_trim_lower2 = value;
+        } 
+        break;
+        case OPUS_SET_TRIM_INCR1_THRESH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < -500 || value > 500)
+               return OPUS_BAD_ARG;
+            st->tune_trim_increase1 = value;
+        } 
+        break;
+        case OPUS_SET_TRIM_INCR2_THRESH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < -500 || value > 500)
+               return OPUS_BAD_ARG;
+            st->tune_trim_increase2 = value;
+        } 
+        break;
+        case OPUS_SET_SPREAD_AGGR_THRESH:
+        {
+           opus_int32 value = va_arg(ap, opus_int32);
+           if (value < -1000 || value > 1000)
+              return OPUS_BAD_ARG;
+           st->tune_spread_aggr = value;
+        }
+        break;
+        case OPUS_SET_SPREAD_MEDIUM_THRESH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < -1000 || value > 1000)
+               return OPUS_BAD_ARG;
+            st->tune_spread_medium = value;
+        }
+        break;
+        case OPUS_SET_SPREAD_LIGHT_THRESH:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < -1000 || value > 1000)
+               return OPUS_BAD_ARG;
+            st->tune_spread_light = value;
+        }
+        break; 
         case OPUS_GET_BANDWIDTH_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);

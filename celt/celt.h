@@ -50,6 +50,82 @@ extern "C" {
 #define CELTDecoder OpusCustomDecoder
 #define CELTMode OpusCustomMode
 
+/** Encoder state
+ @brief Encoder state
+ */
+struct OpusCustomEncoder {
+   const OpusCustomMode *mode;     /**< Mode used by the encoder */
+   int overlap;
+   int channels;
+   int stream_channels;
+
+   int force_intra;
+   int clip;
+   int disable_pf;
+   int complexity;
+   int upsample;
+   int start, end;
+
+   opus_int32 bitrate;
+   int vbr;
+   int signalling;
+   int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
+   int loss_rate;
+
+   /* encoder tuning */
+   int tune_lowpass;
+   int tune_trim;
+   int intensity_start;
+   int skip_high;
+   int skip_low;
+   int tune_trim_lower1;
+   int tune_trim_lower2;
+   int tune_trim_increase1;
+   int tune_trim_increase2;
+   int tune_spread_aggr;
+   int tune_spread_medium;
+   int tune_spread_light;
+
+   /* Everything beyond this point gets cleared on a reset */
+#define ENCODER_RESET_START rng
+
+   opus_uint32 rng;
+   int spread_decision;
+   opus_val32 delayedIntra;
+   int tonal_average;
+   int lastCodedBands;
+   int hf_average;
+   int tapset_decision;
+
+   int prefilter_period;
+   opus_val16 prefilter_gain;
+   int prefilter_tapset;
+#ifdef RESYNTH
+   int prefilter_period_old;
+   opus_val16 prefilter_gain_old;
+   int prefilter_tapset_old;
+#endif
+   int consec_transient;
+
+   opus_val32 preemph_memE[2];
+   opus_val32 preemph_memD[2];
+
+   /* VBR-related parameters */
+   opus_int32 vbr_reservoir;
+   opus_int32 vbr_drift;
+   opus_int32 vbr_offset;
+   opus_int32 vbr_count;
+
+#ifdef RESYNTH
+   celt_sig syn_mem[2][2*MAX_PERIOD];
+#endif
+
+   celt_sig in_mem[1]; /* Size = channels*mode->overlap */
+   /* celt_sig prefilter_mem[],  Size = channels*COMBFILTER_PERIOD */
+   /* celt_sig overlap_mem[],  Size = channels*mode->overlap */
+   /* opus_val16 oldEBands[], Size = 2*channels*mode->nbEBands */
+};
+
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 
 /* Encoder/decoder Requests */
@@ -96,6 +172,20 @@ extern "C" {
 #define CELT_SET_SKIP_LOW(x) CELT_SET_SKIP_LOW_REQUEST, __opus_check_int(x)
 #define CELT_SET_SKIP_HIGH_REQUEST                   10028
 #define CELT_SET_SKIP_HIGH(x) CELT_SET_SKIP_HIGH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_LOWER1_THRESH_REQUEST          10030
+#define CELT_SET_TRIM_LOWER1_THRESH(x) CELT_SET_TRIM_LOWER1_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_LOWER2_THRESH_REQUEST          10032
+#define CELT_SET_TRIM_LOWER2_THRESH(x) CELT_SET_TRIM_LOWER2_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_INCR1_THRESH_REQUEST           10034
+#define CELT_SET_TRIM_INCR1_THRESH(x) CELT_SET_TRIM_INCR1_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_INCR2_THRESH_REQUEST           10036
+#define CELT_SET_TRIM_INCR2_THRESH(x) CELT_SET_TRIM_INCR2_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_SPREAD_AGGR_REQUEST                 10038
+#define CELT_SET_SPREAD_AGGR(x) CELT_SET_SPREAD_AGGR_REQUEST, __opus_check_int(x)
+#define CELT_SET_SPREAD_MEDIUM_REQUEST               10040
+#define CELT_SET_SPREAD_MEDIUM(x) CELT_SET_SPREAD_MEDIUM_REQUEST, __opus_check_int(x)
+#define CELT_SET_SPREAD_LIGHT_REQUEST                10042
+#define CELT_SET_SPREAD_LIGHT(x) CELT_SET_SPREAD_LIGHT_REQUEST, __opus_check_int(x)
 
 /* Encoder stuff */
 

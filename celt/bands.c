@@ -32,6 +32,7 @@
 #endif
 
 #include <math.h>
+#include "celt.h"
 #include "bands.h"
 #include "modes.h"
 #include "vq.h"
@@ -40,6 +41,8 @@
 #include "os_support.h"
 #include "mathops.h"
 #include "rate.h"
+
+#define IF_SET_ELSE(x,y) ((x)?(x):(y))
 
 opus_uint32 celt_lcg_rand(opus_uint32 seed)
 {
@@ -391,7 +394,8 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
 }
 
 /* Decide whether we should spread the pulses in the current frame */
-int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
+int spreading_decision(CELTEncoder * OPUS_RESTRICT st,
+      const CELTMode *m, celt_norm *X, int *average,
       int last_decision, int *hf_average, int *tapset_decision, int update_hf,
       int end, int C, int M)
 {
@@ -464,15 +468,15 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
    *average = sum;
    /* Hysteresis */
    sum = (3*sum + (((3-last_decision)<<7) + 64) + 2)>>2;
-   if (sum < 80)
+   if (sum < IF_SET_ELSE(st->tune_spread_aggr, 80))
    {
       decision = SPREAD_AGGRESSIVE;
       /*printf("Spreading aggressive\n");*/
-   } else if (sum < 256)
+   } else if (sum < IF_SET_ELSE(st->tune_spread_medium, 256))
    {
       decision = SPREAD_NORMAL;
       /*printf("Spreading normal\n");*/
-   } else if (sum < 384)
+   } else if (sum < IF_SET_ELSE(st->tune_spread_light, 384))
    {
       decision = SPREAD_LIGHT;
       /*printf("Spreading light\n");*/
