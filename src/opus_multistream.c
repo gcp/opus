@@ -348,7 +348,7 @@ int opus_multistream_encode(
    ALLOC(in, frame_size*st->layout.nb_channels, float);
 
    for (i=0;i<frame_size*st->layout.nb_channels;i++)
-      in[i] = (1./32768)*pcm[i];
+      in[i] = (1.f/32768.f)*pcm[i];
    ret = opus_multistream_encode_float(st, in, frame_size, data, max_data_bytes);
    RESTORE_STACK;
    return ret;
@@ -458,6 +458,18 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
    case OPUS_SET_DTX_REQUEST:
    case OPUS_SET_FORCE_MODE_REQUEST:
+   case OPUS_SET_TUNE_LOWPASS:
+   case OPUS_SET_TUNE_TRIM:
+   case OPUS_SET_INTENSITY_START:
+   case OPUS_SET_SKIP_LOW:
+   case OPUS_SET_SKIP_HIGH:
+   case OPUS_SET_TRIM_LOWER1_THRESH:
+   case OPUS_SET_TRIM_LOWER2_THRESH:
+   case OPUS_SET_TRIM_INCR1_THRESH:
+   case OPUS_SET_TRIM_INCR2_THRESH:
+   case OPUS_SET_SPREAD_AGGR_THRESH:
+   case OPUS_SET_SPREAD_MEDIUM_THRESH:
+   case OPUS_SET_SPREAD_LIGHT_THRESH:
    {
       int s;
       /* This works for int32 params */
@@ -495,7 +507,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
       *value = (OpusEncoder*)ptr;
    }
-      break;
+   break;
    default:
       ret = OPUS_UNIMPLEMENTED;
       break;
@@ -735,7 +747,7 @@ int opus_multistream_decode_float(OpusMSDecoder *st, const unsigned char *data,
    if (ret > 0)
    {
       for (i=0;i<ret*st->layout.nb_channels;i++)
-         pcm[i] = (1./32768.)*(out[i]);
+         pcm[i] = (1.f/32768.f)*(out[i]);
    }
    RESTORE_STACK;
    return ret;

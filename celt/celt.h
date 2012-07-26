@@ -60,7 +60,6 @@ typedef struct {
    opus_val16 boost_amount[2];
    opus_val16 music_prob;
 }AnalysisInfo;
-
 #define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 
 #define __celt_check_analysis_ptr(ptr) ((ptr) + ((ptr) - (const AnalysisInfo*)(ptr)))
@@ -101,31 +100,49 @@ typedef struct {
 
 #define CELT_SET_TONALITY_REQUEST    10018
 #define CELT_SET_TONALITY(x) CELT_SET_TONALITY_REQUEST, __opus_check_int(x)
+
 #define CELT_SET_TONALITY_SLOPE_REQUEST    10020
 #define CELT_SET_TONALITY_SLOPE(x) CELT_SET_TONALITY_SLOPE_REQUEST, __opus_check_int(x)
 
 #define CELT_SET_ANALYSIS_REQUEST    10022
 #define CELT_SET_ANALYSIS(x) CELT_SET_ANALYSIS_REQUEST, __celt_check_analysis_ptr(x)
 
+#define CELT_SET_TUNE_LOWPASS_REQUEST                10024
+#define CELT_SET_TUNE_LOWPASS(x) CELT_SET_TUNE_LOWPASS_REQUEST, __opus_check_int(x)
+#define CELT_SET_TUNE_TRIM_REQUEST                   10026
+#define CELT_SET_TUNE_TRIM(x) CELT_SET_TUNE_TRIM_REQUEST, __opus_check_int(x)
+#define CELT_SET_INTENSITY_START_REQUEST             10028
+#define CELT_SET_INTENSITY_START(x) CELT_SET_INTENSITY_START_REQUEST, __opus_check_int(x)
+#define CELT_SET_SKIP_LOW_REQUEST                    10030
+#define CELT_SET_SKIP_LOW(x) CELT_SET_SKIP_LOW_REQUEST, __opus_check_int(x)
+#define CELT_SET_SKIP_HIGH_REQUEST                   10032
+#define CELT_SET_SKIP_HIGH(x) CELT_SET_SKIP_HIGH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_LOWER1_THRESH_REQUEST          10034
+#define CELT_SET_TRIM_LOWER1_THRESH(x) CELT_SET_TRIM_LOWER1_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_LOWER2_THRESH_REQUEST          10036
+#define CELT_SET_TRIM_LOWER2_THRESH(x) CELT_SET_TRIM_LOWER2_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_INCR1_THRESH_REQUEST           10038
+#define CELT_SET_TRIM_INCR1_THRESH(x) CELT_SET_TRIM_INCR1_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_TRIM_INCR2_THRESH_REQUEST           10040
+#define CELT_SET_TRIM_INCR2_THRESH(x) CELT_SET_TRIM_INCR2_THRESH_REQUEST, __opus_check_int(x)
+#define CELT_SET_SPREAD_AGGR_REQUEST                 10042
+#define CELT_SET_SPREAD_AGGR(x) CELT_SET_SPREAD_AGGR_REQUEST, __opus_check_int(x)
+#define CELT_SET_SPREAD_MEDIUM_REQUEST               10044
+#define CELT_SET_SPREAD_MEDIUM(x) CELT_SET_SPREAD_MEDIUM_REQUEST, __opus_check_int(x)
+#define CELT_SET_SPREAD_LIGHT_REQUEST                10048
+#define CELT_SET_SPREAD_LIGHT(x) CELT_SET_SPREAD_LIGHT_REQUEST, __opus_check_int(x)
 
 /* Encoder stuff */
 
 int celt_encoder_get_size(int channels);
-
-int celt_encode_with_ec(OpusCustomEncoder * restrict st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
-
+int celt_encode_with_ec(OpusCustomEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
 int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels);
-
-
 
 /* Decoder stuff */
 
 int celt_decoder_get_size(int channels);
-
-
 int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels);
-
-int celt_decode_with_ec(OpusCustomDecoder * restrict st, const unsigned char *data, int len, opus_val16 * restrict pcm, int frame_size, ec_dec *dec);
+int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned char *data, int len, opus_val16 * OPUS_RESTRICT pcm, int frame_size, ec_dec *dec);
 
 #define celt_encoder_ctl opus_custom_encoder_ctl
 #define celt_decoder_ctl opus_custom_decoder_ctl

@@ -84,6 +84,18 @@ extern "C" {
 #  endif
 # endif
 
+#if (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L) )
+# if OPUS_GNUC_PREREQ(3,0)
+#  define OPUS_RESTRICT __restrict__
+# elif (_MSC_VER >= 1400)
+#  define OPUS_RESTRICT __restrict
+# else
+#  define OPUS_RESTRICT
+# endif
+#else
+# define OPUS_RESTRICT restrict
+#endif
+
 /**Warning attributes for opus functions
   * NONNULL is not used in OPUS_BUILD to avoid the compiler optimizing out
   * some paranoid null checks. */
@@ -132,6 +144,18 @@ extern "C" {
 #define OPUS_GET_GAIN_REQUEST                4045
 #define OPUS_SET_LSB_DEPTH_REQUEST           4036
 #define OPUS_GET_LSB_DEPTH_REQUEST           4037
+#define OPUS_SET_TUNE_LOWPASS                5002
+#define OPUS_SET_TUNE_TRIM                   5004
+#define OPUS_SET_INTENSITY_START             5006
+#define OPUS_SET_SKIP_LOW                    5008
+#define OPUS_SET_SKIP_HIGH                   5010
+#define OPUS_SET_TRIM_LOWER1_THRESH          5012
+#define OPUS_SET_TRIM_LOWER2_THRESH          5014
+#define OPUS_SET_TRIM_INCR1_THRESH           5016
+#define OPUS_SET_TRIM_INCR2_THRESH           5018
+#define OPUS_SET_SPREAD_AGGR_THRESH          5020
+#define OPUS_SET_SPREAD_MEDIUM_THRESH        5022
+#define OPUS_SET_SPREAD_LIGHT_THRESH         5024
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -260,7 +284,13 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_FORCE_CHANNELS(x) OPUS_GET_FORCE_CHANNELS_REQUEST, __opus_check_int_ptr(x)
 
-/** Configures the encoder's maximum bandpass allowed. @see OPUS_GET_MAX_BANDWIDTH
+/** Configures the maximum bandpass that the encoder will select automatically.
+  * Applications should normally use this instead of \a OPUS_SET_BANDWIDTH
+  * (leaving that set to the default, \c OPUS_AUTO). This allows the
+  * application to set an upper bound based on the type of input it is
+  * providing, but still gives the encoder the freedom to reduce the bandpass
+  * when the bitrate becomes too low, for better overall quality.
+  * @see OPUS_GET_MAX_BANDWIDTH
   * The supported values are:
   *  - OPUS_BANDWIDTH_NARROWBAND     4kHz passband
   *  - OPUS_BANDWIDTH_MEDIUMBAND     6kHz passband
@@ -276,7 +306,13 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_MAX_BANDWIDTH(x) OPUS_GET_MAX_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
 
-/** Configures the encoder's bandpass. @see OPUS_GET_BANDWIDTH
+/** Sets the encoder's bandpass to a specific value.
+  * This prevents the encoder from automatically selecting the bandpass based
+  * on the available bitrate. If an application knows the bandpass of the input
+  * audio it is providing, it should normally use \a OPUS_SET_MAX_BANDWIDTH
+  * instead, which still gives the encoder the freedom to reduce the bandpass
+  * when the bitrate becomes too low, for better overall quality.
+  * @see OPUS_GET_BANDWIDTH
   * The supported values are:
   *  - OPUS_AUTO (default)
   *  - OPUS_BANDWIDTH_NARROWBAND     4kHz passband
