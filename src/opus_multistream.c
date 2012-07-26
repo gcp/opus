@@ -463,8 +463,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_INTENSITY_START:
    case OPUS_SET_SKIP_LOW:
    case OPUS_SET_SKIP_HIGH:
-   case OPUS_SET_TRIM_LOWER1_THRESH:
-   case OPUS_SET_TRIM_LOWER2_THRESH:
+   case OPUS_SET_TRIM_PARAM1_THRESH:
+   case OPUS_SET_TRIM_PARAM2_THRESH:
    case OPUS_SET_TRIM_INCR1_THRESH:
    case OPUS_SET_TRIM_INCR2_THRESH:
    case OPUS_SET_SPREAD_AGGR_THRESH:

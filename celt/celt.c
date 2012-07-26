@@ -199,8 +199,8 @@ struct OpusCustomEncoder {
    int intensity_start;
    int skip_high;
    int skip_low;
-   int tune_trim_lower1;
-   int tune_trim_lower2;
+   int tune_trim_param1;
+   int tune_trim_param2;
    int tune_trim_increase1;
    int tune_trim_increase2;
    int tune_spread_aggr;
@@ -837,7 +837,7 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
    }
 }
 
-static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
+static int alloc_trim_analysis(const OpusCustomEncoder * st, const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
       AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate,
       int intensity)
@@ -890,7 +890,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       logXC2 = PSHR32(logXC2-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
 #endif
 
-      trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
+      trim += MAX16(-QCONST16(IF_SET_ELSE(st->tune_trim/4.0f, 4.f), 8), 
+                    MULT16_16_Q15(QCONST16(IF_SET_ELSE(st->tune_trim_increase1/100.0f,.75f), 15),logXC));
       *stereo_saving = MIN16(*stereo_saving + QCONST16(0.25f, 8), -HALF16(logXC2));
    }
 
@@ -1603,7 +1604,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    alloc_trim = 5;
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
-      alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
+      alloc_trim = alloc_trim_analysis(st, st->mode, X, bandLogE,
             st->end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate, st->intensity);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
@@ -2180,20 +2181,20 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          st->skip_high = value;
       } 
       break;
-      case CELT_SET_TRIM_LOWER1_THRESH_REQUEST:
+      case CELT_SET_TRIM_PARAM1_THRESH_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          if (value < -500 || value > 500)
             return OPUS_BAD_ARG;
-         st->tune_trim_lower1 = value;
+         st->tune_trim_param1 = value;
       } 
       break;
-      case CELT_SET_TRIM_LOWER2_THRESH_REQUEST:
+      case CELT_SET_TRIM_PARAM2_THRESH_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          if (value < -500 || value > 500)
             return OPUS_BAD_ARG;
-         st->tune_trim_lower2 = value;
+         st->tune_trim_param2 = value;
       } 
       break;
       case CELT_SET_TRIM_INCR1_THRESH_REQUEST:
