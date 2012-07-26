@@ -150,6 +150,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="analysis.c" />
+    <ClCompile Include="mlp.c" />
+    <ClCompile Include="mlp_data.c" />
     <ClCompile Include="opus.c" />
     <ClCompile Include="opus_decoder.c" />
     <ClCompile Include="opus_encoder.c" />

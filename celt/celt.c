@@ -1565,15 +1565,15 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    {
       int effectiveRate;
 
+      static const opus_val16 intensity_thresholds[21]=
+         /* 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19  20  off*/
+      { 16,21,23,25,27,29,31,33,35,38,42,46,50,54,58,63,68,75,84,102,130};
+      static const opus_val16 intensity_histeresis[21]=
+      {  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6,  8, 12};
+
       /* Always use MS for 2.5 ms frames until we can do a better analysis */
       if (LM!=0)
          dual_stereo = stereo_analysis(st->mode, X, LM, N);
-
-      static const opus_val16 intensity_thresholds[21]=
-      /* 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19  20  off*/
-        { 16,21,23,25,27,29,31,33,35,38,42,46,50,54,58,63,68,75,84,102,130};
-      static const opus_val16 intensity_histeresis[21]=
-        {  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6,  8, 12};
 
       /* Account for coarse energy */
       effectiveRate = (8*effectiveBytes - 80)>>LM;

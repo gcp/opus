@@ -90,7 +90,7 @@
     <ClInclude Include="vq.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\win32\config.h">
+    <ClInclude Include="..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

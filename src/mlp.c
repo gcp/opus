@@ -25,8 +25,12 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <math.h>
+#include "float_cast.h"
 #include "mlp.h"
 #include "arch.h"
 #include "tansig_table.h"
@@ -68,7 +72,7 @@ static inline double tansig_approx(double x)
 		return 1;
 	if (x<=-10)
 		return -1;
-	i = lrint(25*x);
+	i = float2int(25*x);
 	x -= .04*i;
 	y = tansig_table[250+i];
 	dy = 1-y*y;

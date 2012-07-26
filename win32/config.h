@@ -6,6 +6,7 @@
 #define restrict 
 #define inline __inline
 #define getpid _getpid
+#define copysignf(x, y) ((float)_copysign((float)(x),(float)(y)))
 
 #define USE_ALLOCA            1
 

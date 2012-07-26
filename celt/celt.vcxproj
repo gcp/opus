@@ -149,7 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\win32\config.h" />
+    <ClInclude Include="..\win32\config.h" />
     <ClInclude Include="arch.h" />
     <ClInclude Include="bands.h" />
     <ClInclude Include="celt.h" />
