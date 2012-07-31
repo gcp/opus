@@ -201,7 +201,7 @@ struct OpusCustomEncoder {
    int skip_low;
    int tune_trim_param1;
    int tune_trim_param2;
-   int tune_trim_increase1;
+   int tune_trim_param3;
    int tune_trim_increase2;
    int tune_spread_aggr;
    int tune_spread_medium;
@@ -844,9 +844,9 @@ static int alloc_trim_analysis(const OpusCustomEncoder * st, const CELTMode *m, 
 {
    int i;
    opus_val32 diff=0;
-   int c;
-   int trim_index = 5;
-   opus_val16 trim = QCONST16(5.f, 8);
+   int c;   
+   int trim_index;
+   opus_val16 trim = QCONST16(IF_SET_ELSE(st->tune_trim - 1.0f, 5.f), 8);
    opus_val16 logXC, logXC2;
    if (C==2)
    {
@@ -872,14 +872,6 @@ static int alloc_trim_analysis(const OpusCustomEncoder * st, const CELTMode *m, 
          minXC = MIN16(minXC, EXTRACT16(SHR32(partial, 18)));
       }
       /*printf ("%f\n", sum);*/
-      if (sum > QCONST16(.995f,10))
-         trim_index-=4;
-      else if (sum > QCONST16(.92f,10))
-         trim_index-=3;
-      else if (sum > QCONST16(.85f,10))
-         trim_index-=2;
-      else if (sum > QCONST16(.8f,10))
-         trim_index-=1;
       /* mid-side savings estimations based on the LF average*/
       logXC = celt_log2(QCONST32(1.001f, 20)-MULT16_16(sum, sum));
       /* mid-side savings estimations based on min correlation */
@@ -890,8 +882,8 @@ static int alloc_trim_analysis(const OpusCustomEncoder * st, const CELTMode *m, 
       logXC2 = PSHR32(logXC2-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
 #endif
 
-      trim += MAX16(-QCONST16(IF_SET_ELSE(st->tune_trim/4.0f, 4.f), 8), 
-                    MULT16_16_Q15(QCONST16(IF_SET_ELSE(st->tune_trim_increase1/100.0f,.75f), 15),logXC));
+      trim += MAX16(-QCONST16(4.f, 8), 
+                    MULT16_16_Q15(QCONST16(IF_SET_ELSE(st->tune_trim_param1/100.0f, .75f), 15),logXC));
       *stereo_saving = MIN16(*stereo_saving + QCONST16(0.25f, 8), -HALF16(logXC2));
    }
 
@@ -904,20 +896,15 @@ static int alloc_trim_analysis(const OpusCustomEncoder * st, const CELTMode *m, 
    } while (++c<C);
    diff /= C*(end-1);
    /*printf("%f\n", diff);*/
-   if (diff > QCONST16(2.f, DB_SHIFT))
-      trim_index--;
-   if (diff > QCONST16(8.f, DB_SHIFT))
-      trim_index--;
-   if (diff < -QCONST16(4.f, DB_SHIFT))
-      trim_index++;
-   if (diff < -QCONST16(10.f, DB_SHIFT))
-      trim_index++;
-   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
+   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 
+                 SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)*IF_SET_ELSE(st->tune_trim_param2/1000.0f, 0.166666f) ));
    trim -= 2*SHR16(tf_estimate-QCONST16(1.f,14), 14-8);
 #ifndef FIXED_POINT
    if (analysis->valid)
    {
-      trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05)));
+      trim -= MAX16(-QCONST16(2, 8), 
+              MIN16(QCONST16(2, 8), 
+              IF_SET_ELSE(st->tune_trim_param3/100.0f, 2.0f)*(analysis->tonality_slope+.05)));      
    }
 #endif
 
@@ -2197,12 +2184,12 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          st->tune_trim_param2 = value;
       } 
       break;
-      case CELT_SET_TRIM_INCR1_THRESH_REQUEST:
+      case CELT_SET_TRIM_PARAM3_THRESH_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          if (value < -500 || value > 500)
             return OPUS_BAD_ARG;
-         st->tune_trim_increase1 = value;
+         st->tune_trim_param3 = value;
       } 
       break;
       case CELT_SET_TRIM_INCR2_THRESH_REQUEST:
