@@ -202,7 +202,7 @@ struct OpusCustomEncoder {
    int tune_trim_param1;
    int tune_trim_param2;
    int tune_trim_param3;
-   int tune_trim_increase2;
+   int tune_trim_param4;
    int tune_spread_aggr;
    int tune_spread_medium;
    int tune_spread_light;
@@ -882,7 +882,7 @@ static int alloc_trim_analysis(const OpusCustomEncoder * st, const CELTMode *m, 
       logXC2 = PSHR32(logXC2-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
 #endif
 
-      trim += MAX16(-QCONST16(4.f, 8), 
+      trim += MAX16(-QCONST16(IF_SET_ELSE(st->tune_trim_param4/100.0f, 4.f), 8), 
                     MULT16_16_Q15(QCONST16(IF_SET_ELSE(st->tune_trim_param1/100.0f, .75f), 15),logXC));
       *stereo_saving = MIN16(*stereo_saving + QCONST16(0.25f, 8), -HALF16(logXC2));
    }
@@ -2192,12 +2192,12 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
          st->tune_trim_param3 = value;
       } 
       break;
-      case CELT_SET_TRIM_INCR2_THRESH_REQUEST:
+      case CELT_SET_TRIM_PARAM4_THRESH_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          if (value < -500 || value > 500)
             return OPUS_BAD_ARG;
-         st->tune_trim_increase2 = value;
+         st->tune_trim_param4 = value;
       } 
       break;
       case CELT_SET_SPREAD_AGGR_REQUEST:

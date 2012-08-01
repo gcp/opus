@@ -1110,7 +1110,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     if (st->tune_trim_increase1 != 0)
        celt_encoder_ctl(celt_enc, CELT_SET_TRIM_PARAM3_THRESH(st->tune_trim_increase1));
     if (st->tune_trim_increase2 != 0)
-       celt_encoder_ctl(celt_enc, CELT_SET_TRIM_INCR2_THRESH(st->tune_trim_increase2));
+       celt_encoder_ctl(celt_enc, CELT_SET_TRIM_PARAM4_THRESH(st->tune_trim_increase2));
     if (st->tune_spread_aggr != 0)
        celt_encoder_ctl(celt_enc, CELT_SET_SPREAD_AGGR(st->tune_spread_aggr));
     if (st->tune_spread_medium != 0)
@@ -1588,7 +1588,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             st->tune_trim_increase1 = value;
         } 
         break;
-        case OPUS_SET_TRIM_INCR2_THRESH:
+        case OPUS_SET_TRIM_PARAM4_THRESH:
         {
             opus_int32 value = va_arg(ap, opus_int32);
             if (value < -500 || value > 500)

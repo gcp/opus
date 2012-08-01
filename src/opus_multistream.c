@@ -466,7 +466,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_TRIM_PARAM1_THRESH:
    case OPUS_SET_TRIM_PARAM2_THRESH:
    case OPUS_SET_TRIM_PARAM3_THRESH:
-   case OPUS_SET_TRIM_INCR2_THRESH:
+   case OPUS_SET_TRIM_PARAM4_THRESH:
    case OPUS_SET_SPREAD_AGGR_THRESH:
    case OPUS_SET_SPREAD_MEDIUM_THRESH:
    case OPUS_SET_SPREAD_LIGHT_THRESH:
