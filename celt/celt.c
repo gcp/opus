@@ -1357,7 +1357,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    printf("\n");*/
 
    ALLOC(bandLogE2, C*st->mode->nbEBands, opus_val16);
-   if (shortBlocks)
+   if (shortBlocks && st->complexity>=8)
    {
       VARDECL(celt_sig, freq2);
       VARDECL(opus_val32, bandE2);
@@ -1513,19 +1513,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          offsets[i] = boost;
       }
    }
-#ifndef FIXED_POINT
-   if (0 && st->analysis.valid)
-   {
-      if (st->analysis.boost_amount[0]>.2)
-         offsets[st->analysis.boost_band[0]]+=2;
-      if (st->analysis.boost_amount[0]>.4)
-         offsets[st->analysis.boost_band[0]]+=2;
-      if (st->analysis.boost_amount[1]>.2)
-         offsets[st->analysis.boost_band[1]]+=2;
-      if (st->analysis.boost_amount[1]>.4)
-         offsets[st->analysis.boost_band[1]]+=2;
-   }
-#endif
    dynalloc_logp = 6;
    total_bits<<=BITRES;
    total_boost = 0;
@@ -1600,7 +1587,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      opus_val16 alpha;
      opus_int32 delta;
      /* The target rate in 8th bits per frame */
-     opus_int32 target, new_target;
+     opus_int32 target, base_target;
      opus_int32 min_allowed;
      int coded_bins;
      int coded_bands;
@@ -1614,6 +1601,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         The CELT allocator will just not be able to use more than that anyway. */
      nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
      target = vbr_rate - ((40*C+20)<<BITRES);
+     base_target = target;
+
      if (st->constrained_vbr)
         target += (st->vbr_offset>>lm_diff);
 
@@ -1622,6 +1611,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->analysis.valid && st->analysis.activity<.4)
         target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
 #endif
+     /* Stereo savings */
      if (C==2)
      {
         int coded_stereo_bands;
@@ -1632,25 +1622,28 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
      }
-     /* Compensates for the average tonality boost */
-     target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
      /* Limits starving of other bands when using dynalloc */
      target += tot_boost;
      /* Compensates for the average transient boost */
      target = MULT16_32_Q15(QCONST16(0.96f,15),target);
-
-     new_target = SHL32(MULT16_32_Q15(tf_estimate, target),1);
+     /* Apply transient boost */
+     target = SHL32(MULT16_32_Q15(tf_estimate, target),1);
 
 #ifndef FIXED_POINT
+     /* Apply tonality boost */
      if (st->analysis.valid) {
         int tonal_target;
         float tonal;
+
+        /* Compensates for the average tonality boost */
+        target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
+
         tonal = MAX16(0,st->analysis.tonality-.2);
-        tonal_target = new_target + (coded_bins<<BITRES)*2.0f*tonal;
+        tonal_target = target + (coded_bins<<BITRES)*2.0f*tonal;
         if (pitch_change)
            tonal_target +=  (coded_bins<<BITRES)*.8;
         /*printf("%f %f ", st->analysis.tonality, tonal);*/
-        new_target = IMAX(tonal_target,new_target);
+        target = IMAX(tonal_target,target);
      }
 #endif
 
@@ -1660,13 +1653,30 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         bins = st->mode->eBands[st->mode->nbEBands-2]<<LM;
         /*floor_depth = SHR32(MULT16_16((C*bins<<BITRES),celt_log2(SHL32(MAX16(1,sample_max),13))), DB_SHIFT);*/
         floor_depth = SHR32(MULT16_16((C*bins<<BITRES),maxDepth), DB_SHIFT);
-        floor_depth = IMAX(floor_depth, new_target>>2);
-        new_target = IMIN(new_target, floor_depth);
+        floor_depth = IMAX(floor_depth, target>>2);
+        target = IMIN(target, floor_depth);
         /*printf("%f %d\n", maxDepth, floor_depth);*/
      }
+
+     if (st->constrained_vbr || st->bitrate<64000)
+     {
+        opus_val16 rate_factor;
+#ifdef FIXED_POINT
+        rate_factor = MAX16(0,(st->bitrate-32000));
+#else
+        rate_factor = MAX16(0,(1.f/32768)*(st->bitrate-32000));
+#endif
+        if (st->constrained_vbr)
+           rate_factor = MIN16(rate_factor, QCONST16(0.67f, 15));
+        target = base_target + MULT16_32_Q15(rate_factor, target-base_target);
+
+     }
+     /* Don't allow more than doubling the rate */
+     target = IMIN(2*base_target, target);
+
      /* The current offset is removed from the target and the space used
         so far is added*/
-     target=new_target+tell;
+     target=target+tell;
      /* In VBR mode the frame size must not be reduced so much that it would
          result in the encoder running out of bits.
         The margin of 2 bytes ensures that none of the bust-prevention logic
