@@ -238,6 +238,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       opus_val32 mean;
       opus_int32 unmask=0;
       opus_val32 norm;
+      opus_val16 maxE;
       mem0=0;
       mem1=0;
       /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
@@ -292,6 +293,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       }
 
       mem0=0;
+      maxE=0;
       /* Backward pass to compute the pre-echo threshold */
       for (i=len2-1;i>=0;i--)
       {
@@ -302,13 +304,16 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          tmp[i] = mem0 + MULT16_16_P15(QCONST16(0.125f,15),tmp[i]-mem0);
 #endif
          mem0 = tmp[i];
+         maxE = MAX16(maxE, mem0);
       }
-      /*for (i=0;i<len;i++)printf("%f ", tmp[i]/mean);printf("\n");*/
+      /*for (i=0;i<len2;i++)printf("%f ", tmp[i]/mean);printf("\n");*/
 
       /* Compute the ratio of the mean energy over the harmonic mean of the energy.
          This essentially corresponds to a bitrate-normalized temporal noise-to-mask
          ratio */
 
+      //mean = MAX16(mean, MULT16_16(maxE,len2>>2));
+      mean = sqrt(mean*(float)maxE*len2/2.);
       /* Inverse of the mean energy in Q15+6 */
       norm = SHL32(EXTEND32(len2),6+14)/ADD32(EPSILON,SHR32(mean,1));
       /* Compute harmonic mean discarding the unreliable boundaries
@@ -333,10 +338,10 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
          mask_metric = unmask;
       }
    }
-   is_transient = mask_metric>141;
+   is_transient = mask_metric>200;
 
    /* Arbitrary metric for VBR boost */
-   tf_max = MAX16(0,celt_sqrt(64*mask_metric)-64);
+   tf_max = .65*MAX16(0,celt_sqrt(64*mask_metric)-64);
    /* *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20); */
    *tf_estimate = QCONST16(1.f, 14) + celt_sqrt(MAX16(0, SHL32(MULT16_16(QCONST16(0.0069,14),IMIN(163,tf_max)),14)-QCONST32(0.139,28)));
    /*printf("%d %f\n", tf_max, mask_metric);*/
@@ -344,6 +349,7 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
+   /*printf("%d %f %d %d\n", is_transient, (float)*tf_estimate, tf_max, mask_metric);*/
    /*printf("%d %f %d\n", is_transient, (float)*tf_estimate, tf_max);*/
    return is_transient;
 }
