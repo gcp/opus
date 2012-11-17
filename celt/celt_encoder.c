@@ -952,7 +952,7 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
             N, &pitch_index, st->prefilter_period, st->prefilter_gain);
       if (pitch_index > COMBFILTER_MAXPERIOD-2)
          pitch_index = COMBFILTER_MAXPERIOD-2;
-      gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+      gain1 = MULT16_16_Q15(QCONST16(.5f,15),gain1);
       /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
       if (st->loss_rate>2)
          gain1 = HALF32(gain1);
