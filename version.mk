@@ -1,2 +1,2 @@
 # static version string; update manually every release.
-OPUS_VERSION = "v1.0.1-147-g14454c4"
+OPUS_VERSION = "v1.0.1-148-g655e7b5"
