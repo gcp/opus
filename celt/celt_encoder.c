@@ -1545,10 +1545,11 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
      {
         int coded_stereo_bands;
         int coded_stereo_dof;
+        float frac;
         coded_stereo_bands = IMIN(st->intensity, coded_bands);
         coded_stereo_dof = (eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
-        float frac=0.8*eBands[st->intensity]/(float)(eBands[coded_bands]+eBands[st->intensity]);
+        frac=0.8*eBands[st->intensity]/(float)(eBands[coded_bands]+eBands[st->intensity]);
         if (frac>.4)frac=.4;
         target -= MIN32(frac*target, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
