@@ -1415,7 +1415,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          else
             st->spread_decision = SPREAD_NORMAL;
       } else {
-         if (st->analysis.valid)
+         if (0&&st->analysis.valid)
          {
             static const opus_val16 spread_thresholds[3] = {-QCONST16(.6f, 15), -QCONST16(.2f, 15), -QCONST16(.07f, 15)};
             static const opus_val16 spread_histeresis[3] = {QCONST16(.15f, 15), QCONST16(.07f, 15), QCONST16(.02f, 15)};
@@ -1548,7 +1548,9 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         coded_stereo_bands = IMIN(st->intensity, coded_bands);
         coded_stereo_dof = (eBands[coded_stereo_bands]<<LM)-coded_stereo_bands;
         /*printf("%d %d %d ", coded_stereo_dof, coded_bins, tot_boost);*/
-        target -= MIN32(target/3, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
+        float frac=0.8*eBands[st->intensity]/(float)(eBands[coded_bands]+eBands[st->intensity]);
+        if (frac>.4)frac=.4;
+        target -= MIN32(frac*target, SHR16(MULT16_16(st->stereo_saving,(coded_stereo_dof<<BITRES)),8));
         target += MULT16_16_Q15(QCONST16(0.035,15),coded_stereo_dof<<BITRES);
      }
      /* Limits starving of other bands when using dynalloc */
@@ -1565,14 +1567,14 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         float tonal;
 
         /* Compensates for the average tonality boost */
-        target -= MULT16_16_Q15(QCONST16(0.13f,15),coded_bins<<BITRES);
+        target -= MULT16_16_Q15(QCONST16(0.11f,15),coded_bins<<BITRES);
 
-        tonal = MAX16(0,st->analysis.tonality-.2);
-        tonal_target = target + (coded_bins<<BITRES)*2.0f*tonal;
+        tonal = MAX16(0,st->analysis.tonality-.15);
+        tonal_target = target + (coded_bins<<BITRES)*1.2f*tonal;
         if (pitch_change)
            tonal_target +=  (coded_bins<<BITRES)*.8;
         /*printf("%f %f ", st->analysis.tonality, tonal);*/
-        target = IMAX(tonal_target,target);
+        target = tonal_target;
      }
 #endif
 
