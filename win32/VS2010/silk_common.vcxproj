@@ -63,12 +63,23 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
+    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -77,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>fixed;float;../win32;../celt;../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -88,7 +99,7 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
+      <Command>"$(ProjectDir)..\..\win32\genversion.bat" "$(ProjectDir)..\..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -107,7 +118,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;WIN64;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>fixed;float;../win32;../celt;../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -118,7 +129,7 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
+      <Command>"$(ProjectDir)..\..\win32\genversion.bat" "$(ProjectDir)..\..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -138,7 +149,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>fixed;float;../win32;../celt;../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -152,7 +163,7 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
+      <Command>"$(ProjectDir)..\..\win32\genversion.bat" "$(ProjectDir)..\..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -173,7 +184,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;WIN64;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>fixed;float;../win32;../celt;../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../silk/fixed;../../silk/float;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -187,7 +198,7 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
+      <Command>"$(ProjectDir)..\..\win32\genversion.bat" "$(ProjectDir)..\..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -199,84 +210,6 @@
       </Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="A2NLSF.c" />
-    <ClCompile Include="ana_filt_bank_1.c" />
-    <ClCompile Include="biquad_alt.c" />
-    <ClCompile Include="bwexpander.c" />
-    <ClCompile Include="bwexpander_32.c" />
-    <ClCompile Include="check_control_input.c" />
-    <ClCompile Include="CNG.c" />
-    <ClCompile Include="code_signs.c" />
-    <ClCompile Include="control_audio_bandwidth.c" />
-    <ClCompile Include="control_codec.c" />
-    <ClCompile Include="control_SNR.c" />
-    <ClCompile Include="debug.c" />
-    <ClCompile Include="decoder_set_fs.c" />
-    <ClCompile Include="decode_core.c" />
-    <ClCompile Include="decode_frame.c" />
-    <ClCompile Include="decode_indices.c" />
-    <ClCompile Include="decode_parameters.c" />
-    <ClCompile Include="decode_pitch.c" />
-    <ClCompile Include="decode_pulses.c" />
-    <ClCompile Include="dec_API.c" />
-    <ClCompile Include="encode_indices.c" />
-    <ClCompile Include="encode_pulses.c" />
-    <ClCompile Include="enc_API.c" />
-    <ClCompile Include="gain_quant.c" />
-    <ClCompile Include="HP_variable_cutoff.c" />
-    <ClCompile Include="init_decoder.c" />
-    <ClCompile Include="init_encoder.c" />
-    <ClCompile Include="inner_prod_aligned.c" />
-    <ClCompile Include="interpolate.c" />
-    <ClCompile Include="lin2log.c" />
-    <ClCompile Include="log2lin.c" />
-    <ClCompile Include="LPC_analysis_filter.c" />
-    <ClCompile Include="LPC_inv_pred_gain.c" />
-    <ClCompile Include="LP_variable_cutoff.c" />
-    <ClCompile Include="table_LSF_cos.c" />
-    <ClCompile Include="NLSF2A.c" />
-    <ClCompile Include="NLSF_decode.c" />
-    <ClCompile Include="NLSF_del_dec_quant.c" />
-    <ClCompile Include="NLSF_encode.c" />
-    <ClCompile Include="NLSF_stabilize.c" />
-    <ClCompile Include="NLSF_unpack.c" />
-    <ClCompile Include="NLSF_VQ.c" />
-    <ClCompile Include="NLSF_VQ_weights_laroia.c" />
-    <ClCompile Include="NSQ.c" />
-    <ClCompile Include="NSQ_del_dec.c" />
-    <ClCompile Include="pitch_est_tables.c" />
-    <ClCompile Include="PLC.c" />
-    <ClCompile Include="process_NLSFs.c" />
-    <ClCompile Include="quant_LTP_gains.c" />
-    <ClCompile Include="resampler.c" />
-    <ClCompile Include="resampler_down2.c" />
-    <ClCompile Include="resampler_down2_3.c" />
-    <ClCompile Include="resampler_private_AR2.c" />
-    <ClCompile Include="resampler_private_down_FIR.c" />
-    <ClCompile Include="resampler_private_IIR_FIR.c" />
-    <ClCompile Include="resampler_private_up2_HQ.c" />
-    <ClCompile Include="resampler_rom.c" />
-    <ClCompile Include="shell_coder.c" />
-    <ClCompile Include="sigm_Q15.c" />
-    <ClCompile Include="sort.c" />
-    <ClCompile Include="stereo_decode_pred.c" />
-    <ClCompile Include="stereo_encode_pred.c" />
-    <ClCompile Include="stereo_find_predictor.c" />
-    <ClCompile Include="stereo_LR_to_MS.c" />
-    <ClCompile Include="stereo_MS_to_LR.c" />
-    <ClCompile Include="stereo_quant_pred.c" />
-    <ClCompile Include="sum_sqr_shift.c" />
-    <ClCompile Include="tables_gain.c" />
-    <ClCompile Include="tables_LTP.c" />
-    <ClCompile Include="tables_NLSF_CB_NB_MB.c" />
-    <ClCompile Include="tables_NLSF_CB_WB.c" />
-    <ClCompile Include="tables_other.c" />
-    <ClCompile Include="tables_pitch_lag.c" />
-    <ClCompile Include="tables_pulses_per_block.c" />
-    <ClCompile Include="VAD.c" />
-    <ClCompile Include="VQ_WMat_EC.c" />
-  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\opus_types.h" />
     <ClInclude Include="..\win32\config.h" />
@@ -300,6 +233,84 @@
     <ClInclude Include="tables.h" />
     <ClInclude Include="tuning_parameters.h" />
     <ClInclude Include="typedef.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\silk\A2NLSF.c" />
+    <ClCompile Include="..\..\silk\ana_filt_bank_1.c" />
+    <ClCompile Include="..\..\silk\biquad_alt.c" />
+    <ClCompile Include="..\..\silk\bwexpander.c" />
+    <ClCompile Include="..\..\silk\bwexpander_32.c" />
+    <ClCompile Include="..\..\silk\check_control_input.c" />
+    <ClCompile Include="..\..\silk\CNG.c" />
+    <ClCompile Include="..\..\silk\code_signs.c" />
+    <ClCompile Include="..\..\silk\control_audio_bandwidth.c" />
+    <ClCompile Include="..\..\silk\control_codec.c" />
+    <ClCompile Include="..\..\silk\control_SNR.c" />
+    <ClCompile Include="..\..\silk\debug.c" />
+    <ClCompile Include="..\..\silk\decoder_set_fs.c" />
+    <ClCompile Include="..\..\silk\decode_core.c" />
+    <ClCompile Include="..\..\silk\decode_frame.c" />
+    <ClCompile Include="..\..\silk\decode_indices.c" />
+    <ClCompile Include="..\..\silk\decode_parameters.c" />
+    <ClCompile Include="..\..\silk\decode_pitch.c" />
+    <ClCompile Include="..\..\silk\decode_pulses.c" />
+    <ClCompile Include="..\..\silk\dec_API.c" />
+    <ClCompile Include="..\..\silk\encode_indices.c" />
+    <ClCompile Include="..\..\silk\encode_pulses.c" />
+    <ClCompile Include="..\..\silk\enc_API.c" />
+    <ClCompile Include="..\..\silk\gain_quant.c" />
+    <ClCompile Include="..\..\silk\HP_variable_cutoff.c" />
+    <ClCompile Include="..\..\silk\init_decoder.c" />
+    <ClCompile Include="..\..\silk\init_encoder.c" />
+    <ClCompile Include="..\..\silk\inner_prod_aligned.c" />
+    <ClCompile Include="..\..\silk\interpolate.c" />
+    <ClCompile Include="..\..\silk\lin2log.c" />
+    <ClCompile Include="..\..\silk\log2lin.c" />
+    <ClCompile Include="..\..\silk\LPC_analysis_filter.c" />
+    <ClCompile Include="..\..\silk\LPC_inv_pred_gain.c" />
+    <ClCompile Include="..\..\silk\LP_variable_cutoff.c" />
+    <ClCompile Include="..\..\silk\NLSF2A.c" />
+    <ClCompile Include="..\..\silk\NLSF_decode.c" />
+    <ClCompile Include="..\..\silk\NLSF_del_dec_quant.c" />
+    <ClCompile Include="..\..\silk\NLSF_encode.c" />
+    <ClCompile Include="..\..\silk\NLSF_stabilize.c" />
+    <ClCompile Include="..\..\silk\NLSF_unpack.c" />
+    <ClCompile Include="..\..\silk\NLSF_VQ.c" />
+    <ClCompile Include="..\..\silk\NLSF_VQ_weights_laroia.c" />
+    <ClCompile Include="..\..\silk\NSQ.c" />
+    <ClCompile Include="..\..\silk\NSQ_del_dec.c" />
+    <ClCompile Include="..\..\silk\pitch_est_tables.c" />
+    <ClCompile Include="..\..\silk\PLC.c" />
+    <ClCompile Include="..\..\silk\process_NLSFs.c" />
+    <ClCompile Include="..\..\silk\quant_LTP_gains.c" />
+    <ClCompile Include="..\..\silk\resampler.c" />
+    <ClCompile Include="..\..\silk\resampler_down2.c" />
+    <ClCompile Include="..\..\silk\resampler_down2_3.c" />
+    <ClCompile Include="..\..\silk\resampler_private_AR2.c" />
+    <ClCompile Include="..\..\silk\resampler_private_down_FIR.c" />
+    <ClCompile Include="..\..\silk\resampler_private_IIR_FIR.c" />
+    <ClCompile Include="..\..\silk\resampler_private_up2_HQ.c" />
+    <ClCompile Include="..\..\silk\resampler_rom.c" />
+    <ClCompile Include="..\..\silk\shell_coder.c" />
+    <ClCompile Include="..\..\silk\sigm_Q15.c" />
+    <ClCompile Include="..\..\silk\sort.c" />
+    <ClCompile Include="..\..\silk\stereo_decode_pred.c" />
+    <ClCompile Include="..\..\silk\stereo_encode_pred.c" />
+    <ClCompile Include="..\..\silk\stereo_find_predictor.c" />
+    <ClCompile Include="..\..\silk\stereo_LR_to_MS.c" />
+    <ClCompile Include="..\..\silk\stereo_MS_to_LR.c" />
+    <ClCompile Include="..\..\silk\stereo_quant_pred.c" />
+    <ClCompile Include="..\..\silk\sum_sqr_shift.c" />
+    <ClCompile Include="..\..\silk\tables_gain.c" />
+    <ClCompile Include="..\..\silk\tables_LTP.c" />
+    <ClCompile Include="..\..\silk\tables_NLSF_CB_NB_MB.c" />
+    <ClCompile Include="..\..\silk\tables_NLSF_CB_WB.c" />
+    <ClCompile Include="..\..\silk\tables_other.c" />
+    <ClCompile Include="..\..\silk\tables_pitch_lag.c" />
+    <ClCompile Include="..\..\silk\tables_pulses_per_block.c" />
+    <ClCompile Include="..\..\silk\table_LSF_cos.c" />
+    <ClCompile Include="..\..\silk\VAD.c" />
+    <ClCompile Include="..\..\silk\VQ_WMat_EC.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

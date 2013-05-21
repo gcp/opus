@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C++ Express 2010
+# Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opus", "opus.vcxproj", "{219EC965-228A-1824-174D-96449D05F88A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "celt", "celt.vcxproj", "{245603E3-F580-41A5-9632-B25FE3372CBF}"
@@ -40,6 +40,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "silk_float", "silk_float.vcxproj", "{9C4961D2-5DDB-40C7-9BE8-CA918DC4E782}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "silk_common", "silk_common.vcxproj", "{C303D2FC-FF97-49B8-9DDD-467B4C9A0B16}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "silk_fixed", "silk_fixed.vcxproj", "{8484C90D-1561-402F-A91D-2DB10F8C5171}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -113,6 +115,14 @@ Global
 		{C303D2FC-FF97-49B8-9DDD-467B4C9A0B16}.Release|Win32.Build.0 = Release|Win32
 		{C303D2FC-FF97-49B8-9DDD-467B4C9A0B16}.Release|x64.ActiveCfg = Release|x64
 		{C303D2FC-FF97-49B8-9DDD-467B4C9A0B16}.Release|x64.Build.0 = Release|x64
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Debug|Win32.Build.0 = Debug|Win32
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Debug|x64.ActiveCfg = Debug|x64
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Debug|x64.Build.0 = Debug|x64
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Release|Win32.ActiveCfg = Release|Win32
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Release|Win32.Build.0 = Release|Win32
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Release|x64.ActiveCfg = Release|x64
+		{8484C90D-1561-402F-A91D-2DB10F8C5171}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
