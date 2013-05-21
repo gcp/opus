@@ -138,7 +138,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\genversion.bat" "$(ProjectDir)..\version.h" OPUS_VERSION</Command>
+      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -165,7 +165,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\genversion.bat" "$(ProjectDir)..\version.h" OPUS_VERSION</Command>
+      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -195,7 +195,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)\..\genversion.bat" "$(ProjectDir)\..\version.h" OPUS_VERSION</Command>
+      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>
@@ -226,7 +226,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\genversion.bat" "$(ProjectDir)..\version.h" OPUS_VERSION</Command>
+      <Command>"$(ProjectDir)..\win32\genversion.bat" "$(ProjectDir)..\win32\version.h" PACKAGE_VERSION</Command>
       <Message>Generating version.h</Message>
     </PreBuildEvent>
     <CustomBuildStep>

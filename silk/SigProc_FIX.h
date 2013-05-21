@@ -12,7 +12,7 @@ documentation and/or other materials provided with the distribution.
 names of specific contributors, may be used to endorse or promote
 products derived from this software without specific prior written
 permission.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
@@ -575,6 +575,14 @@ static inline opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 #include "Inlines.h"
 #include "MacroCount.h"
 #include "MacroDebug.h"
+
+#ifdef ARMv4_ASM
+#include "SigProc_FIX_armv4.h"
+#endif
+
+#ifdef ARMv5E_ASM
+#include "SigProc_FIX_armv5e.h"
+#endif
 
 #ifdef  __cplusplus
 }

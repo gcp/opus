@@ -58,7 +58,6 @@ typedef struct {
    opus_val16 activity;
    opus_val16 music_prob;
    int        bandwidth;
-   int        opus_bandwidth;
 }AnalysisInfo;
 
 #define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
@@ -107,6 +106,14 @@ typedef struct {
 #define CELT_SET_ANALYSIS_REQUEST    10022
 #define CELT_SET_ANALYSIS(x) CELT_SET_ANALYSIS_REQUEST, __celt_check_analysis_ptr(x)
 
+#define OPUS_SET_LFE_REQUEST    10024
+#define OPUS_SET_LFE(x) OPUS_SET_LFE_REQUEST, __opus_check_int(x)
+
+#define OPUS_SET_ENERGY_SAVE_REQUEST    10026
+#define OPUS_SET_ENERGY_SAVE(x) OPUS_SET_ENERGY_SAVE_REQUEST, __opus_check_val16_ptr(x)
+
+#define OPUS_SET_ENERGY_MASK_REQUEST    10028
+#define OPUS_SET_ENERGY_MASK(x) OPUS_SET_ENERGY_MASK_REQUEST, __opus_check_val16_ptr(x)
 
 /* Encoder stuff */
 
@@ -130,10 +137,6 @@ int celt_decode_with_ec(OpusCustomDecoder * OPUS_RESTRICT st, const unsigned cha
 #define celt_encoder_ctl opus_custom_encoder_ctl
 #define celt_decoder_ctl opus_custom_decoder_ctl
 
-
-#ifndef OPUS_VERSION
-#define OPUS_VERSION "unknown"
-#endif
 
 #ifdef CUSTOM_MODES
 #define OPUS_CUSTOM_NOSTATIC

@@ -1,67 +1,35 @@
 dnl Process this file with autoconf to produce a configure script. -*-m4-*-
 
-AC_INIT(src/opus_encoder.c)
+dnl The package_version file will be automatically synced to the git revision
+dnl by the update_version script when configured in the repository, but will
+dnl remain constant in tarball releases unless it is manually edited.
+m4_define([CURRENT_VERSION],
+          m4_esyscmd([ if test -e package_version || ./update_version; then
+                           . ./package_version
+                           printf "$PACKAGE_VERSION"
+                       else
+                           printf "unknown"
+                       fi ]))
 
-AC_CONFIG_HEADERS([config.h])
+AC_INIT([opus],[CURRENT_VERSION],[opus@xiph.org])
+
+AC_CONFIG_SRCDIR(src/opus_encoder.c)
+AC_CONFIG_MACRO_DIR([m4])
 
 dnl enable silent rules on automake 1.11 and later
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-# Read our default version string from version.mk.
-# Please update this file for releases.
-AC_MSG_CHECKING([version.mk])
-MK_VERSION=$(awk 'BEGIN { FS = "=" }
-                  /OPUS_VERSION/ { ver = $2}
-                  END {
-                        gsub(/"/, "", ver);
-                        gsub(/^ /, "", ver);
-                        gsub(/ $/, "", ver);
-                        print ver;
-                  }' $srcdir/version.mk)
-if test -z "$MK_VERSION"; then
-  AC_MSG_RESULT([no])
-else
-  AC_MSG_RESULT([$MK_VERSION])
-  OPUS_VERSION="$MK_VERSION"
-fi
-
-# Override with the git version, if available.
-AC_MSG_CHECKING([git revision])
-GIT_VERSION=$(git describe --tags --match 'v*' 2>/dev/null | sed 's/^v//')
-if test -z "$GIT_VERSION"; then
-  AC_MSG_RESULT([no])
-else
-  AC_MSG_RESULT([$GIT_VERSION])
-  OPUS_VERSION="$GIT_VERSION"
-fi
-
-# Use 'unknown' if all else fails.
-if test -z "$OPUS_VERSION"; then
-  OPUS_VERSION="unknown"
-fi
-
-# For automake.
-PACKAGE=opus
-VERSION=$OPUS_VERSION
-
-# For autoconf
-AC_SUBST(OPUS_VERSION)
-
-# For config.h.
-AC_DEFINE_UNQUOTED([OPUS_VERSION], ["$OPUS_VERSION"],
-                   [Opus library version string])
-
 # For libtool.
 dnl Please update these for releases.
-OPUS_LT_CURRENT=3
+OPUS_LT_CURRENT=4
 OPUS_LT_REVISION=0
-OPUS_LT_AGE=3
+OPUS_LT_AGE=4
 
 AC_SUBST(OPUS_LT_CURRENT)
 AC_SUBST(OPUS_LT_REVISION)
 AC_SUBST(OPUS_LT_AGE)
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
+AM_INIT_AUTOMAKE([no-define])
 AM_MAINTAINER_MODE([enable])
 
 AC_CANONICAL_HOST
@@ -187,6 +155,36 @@ if test "x${float_approx}" = "xyes"; then
     AC_DEFINE([FLOAT_APPROX], , [Float approximations])
 fi
 
+cpu_arm=no
+AC_ARG_ENABLE(asm,
+    AS_HELP_STRING([--disable-asm], [Disable assembly optimizations]),
+    [ ac_enable_asm=$enableval ], [ ac_enable_asm=yes] )
+if test "x${ac_enable_asm}" = xyes ; then
+    asm_optimization="no asm for your platform, please send patches"
+    case $host_cpu in
+    arm*)
+        cpu_arm=yes
+        AS_GCC_INLINE_ASSEMBLY([asm_optimization="ARM"],
+            [asm_optimization="disabled"])
+        if test "x${asm_optimization}" = "xARM" ; then
+            AC_DEFINE([ARMv4_ASM], [], [Use generic ARMv4 asm optimizations])
+            AS_ASM_ARM_EDSP([ARMv5E_ASM=1],[ARMv5E_ASM=0])
+            if test "x${ARMv5E_ASM}" = "x1" ; then
+                AC_DEFINE(ARMv5E_ASM, 1, [Use ARMv5E asm optimizations])
+                asm_optimization="${asm_optimization} (EDSP)"
+            fi
+            AS_ASM_ARM_MEDIA([ARMv6_ASM=1],[ARMv6_ASM=0])
+            if test "x${ARMv6_ASM}" = "x1" ; then
+                AC_DEFINE(ARMv6_ASM, 1, [Use ARMv6 asm optimizations])
+                asm_optimization="${asm_optimization} (Media)"
+            fi
+        fi
+        ;;
+    esac
+else
+    asm_optimization="disabled"
+fi
+
 ac_enable_assertions="no"
 AC_ARG_ENABLE(assertions, [  --enable-assertions        enable additional software error checking],
 [if test "$enableval" = yes; then
@@ -224,12 +222,13 @@ AC_SUBST(SYMBOL_VISIBILITY)
 
 CFLAGS="$CFLAGS -W"
 
+warn_CFLAGS="-Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes"
 saved_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes"
-AC_MSG_CHECKING([if ${CC} supports -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes])
+CFLAGS="$CFLAGS $warn_CFLAGS"
+AC_MSG_CHECKING([if ${CC} supports ${warn_CFLAGS}])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([yes])
-        EXTRA_WARNS="-Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes" ],
+        EXTRA_WARNS=$warn_CFLAGS ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $EXTRA_WARNS"
 
@@ -293,13 +292,14 @@ AC_SUBST([PC_LIBM])
 
 AC_CONFIG_FILES([Makefile opus.pc opus-uninstalled.pc
                  doc/Makefile doc/Doxyfile])
+AC_CONFIG_HEADERS([config.h])
 
 AC_OUTPUT
 
 AC_MSG_RESULT([
 ------------------------------------------------------------------------
-  $PACKAGE $VERSION:  Automatic configuration OK.
-  
+  $PACKAGE_NAME $PACKAGE_VERSION:  Automatic configuration OK.
+
     Compiler support:
 
       C99 var arrays: ................ ${has_var_arrays}
@@ -311,6 +311,7 @@ AC_MSG_RESULT([
       Floating point support: ........ ${ac_enable_float}
       Fast float approximations: ..... ${float_approx}
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
+      Assembly optimization: ......... ${asm_optimization}
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
       Fuzzing: ....................... ${ac_enable_fuzzing}
