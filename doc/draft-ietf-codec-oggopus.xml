@@ -10,7 +10,7 @@
 ]>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-00">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-oggopus-01">
 
 <front>
 <title abbrev="Ogg Opus">Ogg Encapsulation for the Opus Audio Codec</title>
@@ -59,7 +59,7 @@
 </address>
 </author>
 
-<date day="19" month="November" year="2012"/>
+<date day="24" month="May" year="2013"/>
 <area>RAI</area>
 <workgroup>codec</workgroup>
 
@@ -756,17 +756,18 @@ Specific locations depend on the number of channels, and are given below
   <t>8 channels: 7.1 surround (front&nbsp;left, front&nbsp;center, front&nbsp;right, side&nbsp;left, side&nbsp;right, rear&nbsp;left, rear&nbsp;right, LFE)</t>
 </list>
 This set of surround configurations and speaker location orderings is the same
- as the one used by the Vorbis codec. <xref target="vorbis-mapping"/>
+ as the one used by the Vorbis codec <xref target="vorbis-mapping"/>.
 The ordering is different from the one used by the
  WAVE <xref target="wave-multichannel"/> and
  FLAC <xref target="flac"/> formats,
- although the configurations match, so correct ordering requires permutation
- of the output channels when encoding from or decoding to those formats.
+ so correct ordering requires permutation of the output channels when encoding
+ from or decoding to those formats.
 'LFE' here refers to a Low Frequency Effects, often mapped to a subwoofer
  with no particular spacial position.
 Implementations SHOULD identify 'side' or 'rear' speaker locations with
  'surround' and 'back' as appropriate when interfacing with audio formats
  or systems which prefer that terminology.
+Speaker configurations other than those described here are not supported.
 </t>
 </section>
 
@@ -1138,194 +1139,106 @@ An implementation could reasonably choose any of these numbers for its internal
 </t>
 </section>
 
+<section anchor="encoder" title="Encoder Guidelines">
+<t>
+When encoding Opus files, Ogg encoders should take into account the
+ algorithmic delay of the Opus encoder.
+</t>
+<figure align="center">
+<preamble>
+In encoders derived from the reference implementation, the number of
+ samples can be queried with:
+</preamble>
+<artwork align="center"><![CDATA[
+ opus_encoder_ctl(encoder_state, OPUS_GET_LOOKAHEAD, &samples_delay);
+]]></artwork>
+</figure>
+<t>
+To achieve good quality in the very first samples of a stream, the Ogg encoder
+ MAY use LPC extrapolation to generate at least 120 extra samples
+ (extra_samples) at the beginning to avoid the Opus encoder having to encode
+ a discontinuous signal.
+For an input file containing length samples, the Ogg encoder SHOULD set the
+ preskip header flag to samples_delay+extra_samples, encode at least
+ length+samples_delay+extra_samples samples, and set the granulepos of the last
+ page to length+samples_delay+extra_samples.
+This ensures that the encoded file has the same duration as the original, with
+ no time offset. The best way to pad the end of the stream is to also use LPC
+ extrapolation, but zero-padding is also acceptable.
+</t>
+
+<section anchor="lpc" title="LPC Extrapolation">
+<t>
+The first step in LPC extrapolation is to compute linear prediction
+ coefficients.
+When extending the end of the signal, order-N (typically with N ranging from 8
+ to 40) LPC analysis is performed on a window near the end of the signal.
+The last N samples are used as memory to an infinite impulse response (IIR)
+ filter.
+</t>
+<figure align="center">
+<preamble>
+The filter is then applied on a zero input to extrapolate the end of the signal.
+Let a(k) be the kth LPC coefficient and x(n) be the nth sample of the signal,
+ each new sample past the end of the signal is computed as:
+</preamble>
+<artwork align="center"><![CDATA[
+        N
+       ---
+x(n) = \   a(k)*x(n-k)
+       /
+       ---
+       k=1
+]]></artwork>
+</figure>
+<t>
+The process is repeated independently for each channel.
+It is possible to extend the beginning of the signal by applying the same
+ process backward in time.
+When extending the beginning of the signal, it is best to apply a "fade in" to
+ the extrapolated signal, e.g. by multiplying it by a half-Hanning window
+ <xref target="hanning"/>.
+</t>
+
+</section>
+
+<section anchor="continuous_chaining" title="Continuous Chaining">
+<t>
+In some applications, such as Internet radio, it is desirable to cut a long
+ streams into smaller chains, e.g. so the comment header can be updated.
+This can be done simply by separating the input streams into segments and
+ encoding each segment independently.
+The drawback of this approach is that it creates a small discontinuity
+ at the boundary due to the lossy nature of Opus.
+An encoder MAY avoid this discontinuity by using the following procedure:
+<list style="numbers">
+<t>Encode the last frame of the first segment as an independent frame by
+ turning off all forms of inter-frame prediction.
+De-emphasis is allowed.</t>
+<t>Set the granulepos of the last page to a point near the end of the last
+ frame.</t>
+<t>Begin the second segment with a copy of the last frame of the first
+ segment.</t>
+<t>Set the preskip flag of the second stream in such a way as to properly
+ join the two streams.</t>
+<t>Continue the encoding process normally from there, without any reset to
+ the encoder.</t>
+</list>
+</t>
+</section>
+
+</section>
+
 <section anchor="implementation" title="Implementation Status">
 <t>
-What follows is a brief summary of major implementations of this
- draft, and their status.
-Note that this section should be removed before final publication
- as an RFC as per <xref target="draft-sheffer-running-code"/>.
+A brief summary of major implementations of this draft is available
+ at <eref target="https://wiki.xiph.org/OggOpusImplementation"/>,
+  along with their status.
 </t>
-
-<section anchor="impl-opus-tools" title="opus-tools">
 <t>
-The initial development implementation of this draft was in the
- opusenc, opusdec, and opusinfo command-line utilties, part of the
- opus-tools package and repository.
-While still 'development' status (pre-1.0) these utilities are
- in active public use, and have shipped with some recent Linux
- distributions and in homebrew.
-Together they implement basic read, write and playback support of
- Ogg Opus files including metadata, multichannel, start and end
- trimming, the gain field, live streams, and chained files, but currently do
- not support seeking.
-This implementation is open source.
+[Note to RFC Editor: please remove this entire section before
+ final publication per <xref target="draft-sheffer-running-code"/>.]
 </t>
-<t><list style="symbols">
-  <t><eref target="https://git.xiph.org/?p=opus-tools.git"/></t>
-  <t><eref target="http://www.opus-codec.org/downloads/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-opusfile" title="opusfile">
-<t>
-The opusfile library is a separate implementation of this draft as a helper
- library for demuxing and decoding.
-Like opus-tools, it supports metadata, multichannel, start and end trimming,
- the gain field, live streams, and chained files.
-Its primary focus is efficient seeking, including over HTTP(S) and in chained
- streams.
-It currently does not create Ogg Opus files.
-This library is in early development and is not widely deployed, though several
- projects are currently using it, including xmms2, taglib, and cmus, and it is
- shipped in some Linux distributions and in homebrew.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="https://git.xiph.org/?p=opusfile.git"/></t>
-  <t><eref target="http://www.opus-codec.org/downloads/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-firefox" title="Firefox">
-<t>
-The Firefox web browser is a widely deployed implementation of
- this draft.
-Basic playback support with the HTML5 &lt;audio&gt; element, including start
- and end trimming, the gain field, live streams, multiplexing with other
- streams (for, e.g., the &lt;video&gt; tag), and seeking, was added in
- Firefox 15, in production release starting August 28, 2012.
-Multichannel support was added in Firefox 17, in production release
- starting November 20, 2012.
-Metadata support was added in Firefox 18, in production release starting
- January 8, 2013.
-Chained file support (as streams only, with seeking disabled) was added in
- Firefox 20, in production release starting April 2, 2013.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="https://mozilla.org/firefox/"/></t>
-  <t><eref target="https://hacks.mozilla.org/2012/08/opus-support-for-webrtc/"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=674225"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=748144"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=778050"/></t>
-  <t><eref target="https://bugzilla.mozilla.org/show_bug.cgi?id=455165"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-chrome" title="Chrome">
-<t>
-Google's Chrome web browser has support for this draft with the
- HTML5 &lt;audio&gt; element in M25 and M26, the dev and
- canary channels respectively as of January, 2013.
-This implementation currently does not support end trimming, the gain tag,
- chained files, or the .opus extension.
-Both M25 and M26 require passing --enable-opus-playback to the executable
- to enable support at the time of this writing.
-This implementation is based on open source code in
- Chromium and WebKit.
-</t>
-<t><list style="symbols">
-  <t><eref target="https://www.google.com/intl/en/chrome/browser/"/></t>
-  <t><eref target="https://www.google.com/intl/en/chrome/browser/canary.html"/></t>
-  <t><eref target="http://code.google.com/p/chromium/issues/detail?id=104241"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-gstreamer" title="GStreamer">
-<t>
-The GStreamer media framework includes an implementation of
- this draft.
-It supports metadata, multichannel, start and end trimming, the gain field,
- live streams, chained files, multiplexing with other streams (e.g., video),
- and seeking.
-Support was first added in early 2011, and is part of the 0.11 and 1.0.x
- releases.
-The code implementing this draft is in the gst-plugins-bad collection,
- which generally indicates unsupported and/or experimental code,
- despite its release status.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://gstreamer.net/"/></t>
-  <t><eref target="http://cgit.freedesktop.org/gstreamer/gst-plugins-bad/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-ffmpeg" title="FFmpeg">
-<t>
-The popular media framework and conversion tool FFmpeg implements
- some of this draft.
-End trimming is not implemented, so file durations are not exactly
- preserved.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://ffmpeg.org/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-libav" title="libav">
-<t>
-The development repository for libav implements this draft,
- similar to FFmpeg.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://libav.org/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-vlc" title="VLC">
-<t>
-VLC is another widely deployed implementation of demuxing, decoding, and
- playback support for this draft.
-It supports metadata, multichannel, start and end trimming, the gain field,
- live streams, seeking, chained files (though seeking does not work
- correctly with chained files), and multiplexing with other streams (e.g.,
- video).
-Opus support was added in version 2.0.4, released on October 18, 2012.
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://www.videolan.org/vlc/"/></t>
-  <t><eref target="http://git.videolan.org/?p=vlc.git"/></t>
-  <t><eref target="http://trac.videolan.org/vlc/ticket/7185"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-foobar2k" title="foobar2000">
-<t>
-A popular Windows application, foobar2000 implements read, write, and playback
- support for this draft.
-It supports metadata, multichannel, start and end trimming, the gain field,
- live streams, chained files, and seeking.
-Opus support was added in version 1.1.14, released on August 17, 2012.
-Encoding support is implemented using opusenc from opus-tools.
-This implementation is closed source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://www.foobar2000.org/"/></t>
-</list></t>
-</section>
-
-<section anchor="impl-rockbox" title="Rockbox">
-<t>
-Rockbox is an established alternative firmware for portable music players
- (typically small, embedded devices) that implements demuxing, decoding, and
- playback support for this draft.
-It supports metadata, start and end trimming, the gain field, and seeking.
-It does not currently support multichannel or chained files.
-Opus is currently only supported in development builds, though it is scheduled
- to be included in the next stable release (3.13).
-This implementation is open source.
-</t>
-<t><list style="symbols">
-  <t><eref target="http://www.rockbox.org/"/></t>
-  <t><eref target="http://git.rockbox.org/?p=rockbox.git"/></t>
-  <t><eref target="http://gerrit.rockbox.org/r/#/c/300/"/></t>
-</list></t>
-</section>
-
 </section>
 
 <section anchor="security" title="Security Considerations">
@@ -1442,16 +1355,6 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </front>
 </reference>
 
-<reference anchor="vorbis-mapping"
- target="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
-<front>
-<title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
-<author initials="C." surname="Montgomery"
- fullname="Christopher &quot;Monty&quot; Montgomery"/>
-<date month="January" year="2010"/>
-</front>
-</reference>
-
 </references>
 
 <references title="Informative References">
@@ -1460,12 +1363,12 @@ The authors agree to grant third parties the irrevocable right to copy, use,
  &rfc4732;
 
 <reference anchor="draft-sheffer-running-code"
-  target="https://tools.ietf.org/html/draft-sheffer-running-code-01#section-2">
+  target="https://tools.ietf.org/html/draft-sheffer-running-code-05#section-2">
  <front>
    <title>Improving "Rough Consensus" with Running Code</title>
    <author initials="Y." surname="Sheffer" fullname="Yaron Sheffer"/>
    <author initials="A." surname="Farrel" fullname="Adrian Farrel"/>
-   <date month="December" year="2012"/>
+   <date month="May" year="2013"/>
  </front>
 </reference>
 
@@ -1475,6 +1378,15 @@ The authors agree to grant third parties the irrevocable right to copy, use,
     <title>FLAC - Free Lossless Audio Codec Format Description</title>
     <author initials="J." surname="Coalson" fullname="Josh Coalson"/>
     <date month="January" year="2008"/>
+  </front>
+</reference>
+
+<reference anchor="hanning"
+ target="http://en.wikipedia.org/wiki/Hamming_function#Hann_.28Hanning.29_window">
+  <front>
+    <title>"Hann window</title>
+    <author fullname="Wikipedia"/>
+    <date month="May" year="2013"/>
   </front>
 </reference>
 
@@ -1499,15 +1411,25 @@ The authors agree to grant third parties the irrevocable right to copy, use,
 </front>
 </reference>
 
-<reference anchor="vorbis-trim"
-  target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+<reference anchor="vorbis-mapping"
+ target="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">
 <front>
-<title>The Vorbis I Specification, Appendix&nbsp;A: Embedding Vorbis into an
- Ogg stream</title>
+<title>The Vorbis I Specification, Section 4.3.9 Output Channel Order</title>
 <author initials="C." surname="Montgomery"
  fullname="Christopher &quot;Monty&quot; Montgomery"/>
-<date month="November" year="2008"/>
+<date month="January" year="2010"/>
 </front>
+</reference>
+
+<reference anchor="vorbis-trim"
+ target="http://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-130000A.2">
+  <front>
+    <title>The Vorbis I Specification, Appendix&nbsp;A: Embedding Vorbis
+      into an Ogg stream</title>
+    <author initials="C." surname="Montgomery"
+     fullname="Christopher &quot;Monty&quot; Montgomery"/>
+    <date month="November" year="2008"/>
+  </front>
 </reference>
 
 <reference anchor="wave-multichannel"

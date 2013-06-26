@@ -40,6 +40,8 @@
 #include "os_support.h"
 #include "mathops.h"
 #include "rate.h"
+#include "quant_bands.h"
+#include "pitch.h"
 
 int hysteresis_decision(opus_val16 val, const opus_val16 *thresholds, const opus_val16 *hysteresis, int N, int prev)
 {
@@ -188,7 +190,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * OPUS_RESTRICT freq, cel
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
-      celt_sig * OPUS_RESTRICT freq, const celt_ener *bandE, int start, int end, int C, int M)
+      celt_sig * OPUS_RESTRICT freq, const opus_val16 *bandLogE, int start, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -204,12 +206,30 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
       for (i=start;i<end;i++)
       {
          int j, band_end;
-         opus_val32 g = SHR32(bandE[i+c*m->nbEBands],1);
+         opus_val16 g;
+         opus_val16 lg;
+#ifdef FIXED_POINT
+         int shift;
+#endif
          j=M*eBands[i];
          band_end = M*eBands[i+1];
+         lg = ADD16(bandLogE[i+c*m->nbEBands], SHL16((opus_val16)eMeans[i],6));
+#ifdef FIXED_POINT
+         /* Handle the integer part of the log energy */
+         shift = 16-(lg>>DB_SHIFT);
+         if (shift>31)
+         {
+            shift=0;
+            g=0;
+         } else {
+            /* Handle the fractional part. */
+            g = celt_exp2_frac(lg&((1<<DB_SHIFT)-1));
+         }
+#else
+         g = celt_exp2(lg);
+#endif
          do {
-            *f++ = SHL32(MULT16_32_Q15(*x, g),2);
-            x++;
+            *f++ = SHR32(MULT16_16(*x++, g), shift);
          } while (++j<band_end);
       }
       celt_assert(start <= end);
@@ -364,11 +384,7 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
    opus_val32 t, lgain, rgain;
 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
-   for (j=0;j<N;j++)
-   {
-      xp = MAC16_16(xp, X[j], Y[j]);
-      side = MAC16_16(side, Y[j], Y[j]);
-   }
+   dual_inner_prod(Y, X, Y, N, &xp, &side);
    /* Compensating for the mid normalization */
    xp = MULT16_32_Q15(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
@@ -501,50 +517,6 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
 #endif
    return decision;
 }
-
-#ifdef MEASURE_NORM_MSE
-
-float MSE[30] = {0};
-int nbMSEBands = 0;
-int MSECount[30] = {0};
-
-void dump_norm_mse(void)
-{
-   int i;
-   for (i=0;i<nbMSEBands;i++)
-   {
-      printf ("%g ", MSE[i]/MSECount[i]);
-   }
-   printf ("\n");
-}
-
-void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C)
-{
-   static int init = 0;
-   int i;
-   if (!init)
-   {
-      atexit(dump_norm_mse);
-      init = 1;
-   }
-   for (i=0;i<m->nbEBands;i++)
-   {
-      int j;
-      int c;
-      float g;
-      if (bandE0[i]<10 || (C==2 && bandE0[i+m->nbEBands]<1))
-         continue;
-      c=0; do {
-         g = bandE[i+c*m->nbEBands]/(1e-15+bandE0[i+c*m->nbEBands]);
-         for (j=M*m->eBands[i];j<M*m->eBands[i+1];j++)
-            MSE[i] += (g*X[j+c*N]-X0[j+c*N])*(g*X[j+c*N]-X0[j+c*N]);
-      } while (++c<C);
-      MSECount[i]+=C;
-   }
-   nbMSEBands = m->nbEBands;
-}
-
-#endif
 
 /* Indexing table for converting from natural Hadamard to ordery Hadamard
    This is essentially a bit-reversed Gray, on top of which we've added

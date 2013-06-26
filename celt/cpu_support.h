@@ -1,4 +1,5 @@
-/* Copyright (C) 2013 Xiph.Org Foundation and contributors */
+/* Copyright (c) 2010 Xiph.Org Foundation
+ * Copyright (c) 2013 Parrot */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -24,48 +25,27 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef FIXED_ARMv4_H
-#define FIXED_ARMv4_H
+#ifndef CPU_SUPPORT_H
+#define CPU_SUPPORT_H
 
-/** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */
-#undef MULT16_32_Q16
-static inline opus_val32 MULT16_32_Q16_armv4(opus_val16 a, opus_val32 b)
+#if defined(OPUS_HAVE_RTCD) && defined(ARMv4_ASM)
+#include "arm/armcpu.h"
+
+/* We currently support 4 ARM variants:
+ * arch[0] -> ARMv4
+ * arch[1] -> ARMv5E
+ * arch[2] -> ARMv6
+ * arch[3] -> NEON
+ */
+#define OPUS_ARCHMASK 3
+
+#else
+#define OPUS_ARCHMASK 0
+
+static inline int opus_select_arch(void)
 {
-  unsigned rd_lo;
-  int rd_hi;
-  __asm__(
-      "#MULT16_32_Q16\n\t"
-      "smull %0, %1, %2, %3\n\t"
-      : "=&r"(rd_lo), "=&r"(rd_hi)
-      : "%r"(b),"r"(a<<16)
-  );
-  return rd_hi;
+  return 0;
 }
-#define MULT16_32_Q16(a, b) (MULT16_32_Q16_armv4(a, b))
-
-
-/** 16x32 multiplication, followed by a 15-bit shift right. Results fits in 32 bits */
-#undef MULT16_32_Q15
-static inline opus_val32 MULT16_32_Q15_armv4(opus_val16 a, opus_val32 b)
-{
-  unsigned rd_lo;
-  int rd_hi;
-  __asm__(
-      "#MULT16_32_Q15\n\t"
-      "smull %0, %1, %2, %3\n\t"
-      : "=&r"(rd_lo), "=&r"(rd_hi)
-      : "%r"(b), "r"(a<<16)
-  );
-  /*We intentionally don't OR in the high bit of rd_lo for speed.*/
-  return rd_hi<<1;
-}
-#define MULT16_32_Q15(a, b) (MULT16_32_Q15_armv4(a, b))
-
-
-/** 16x32 multiply, followed by a 15-bit shift right and 32-bit add.
-    b must fit in 31 bits.
-    Result fits in 32 bits. */
-#undef MAC16_32_Q15
-#define MAC16_32_Q15(c, a, b) ADD32(c, MULT16_32_Q15(a, b))
+#endif
 
 #endif
