@@ -16,7 +16,7 @@ goto :gotversion
 
 :getversion
 
-for /f "delims== tokens=2" %%v in ("%~dp0..\version.mk") do set version=%%v
+for /f "delims== tokens=2" %%v in (%~dps0..\version.mk) do set version=%%v
 
 set version=!version:^"=!
 set version=!version: =!
